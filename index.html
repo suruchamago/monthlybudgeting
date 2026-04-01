@@ -151,6 +151,21 @@
     width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;
   }
 
+  /* ── Loan EMI Inputs ── */
+  .loan-emi-inputs { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .loan-emi-row {
+    display: flex; align-items: center; gap: 12px;
+    background: #F0FDFA; padding: 10px 16px; border-radius: 10px;
+    border: 1px solid var(--accent); animation: fadeIn 0.2s ease;
+  }
+  .loan-emi-row label { font-size: 13px; font-weight: 600; color: var(--dark); white-space: nowrap; }
+  .loan-emi-row input {
+    width: 140px; padding: 8px 12px; border: 2px solid #E2E8F0; border-radius: 8px;
+    font-size: 14px; font-weight: 600; text-align: right;
+  }
+  .loan-emi-row input:focus { border-color: var(--primary); outline: none; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
   /* ── Buttons ── */
   .btn-row { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
   .btn {
@@ -268,7 +283,7 @@
     /* Steps Bar */
     .steps-bar { padding: 0 4px; gap: 0; margin-bottom: 20px; }
     .step-circle { width: 30px; height: 30px; font-size: 12px; }
-    .step-label { font-size: 11px; display: none; }
+    .step-label { font-size: 10px; }
     .step-line { width: 28px; margin: 0 4px; }
 
     /* Cards */
@@ -467,10 +482,28 @@
     <div class="form-group">
       <label data-hi="Kya loans liye hain ya lena chahte ho?" data-en="Do you have or want loans?">Kya loans liye hain ya lena chahte ho?</label>
       <div class="checkbox-group">
-        <label class="check-item"><input type="checkbox" id="chk-homeloan"> <span data-hi="Home Loan" data-en="Home Loan">Home Loan</span></label>
-        <label class="check-item"><input type="checkbox" id="chk-carloan"> <span data-hi="Car Loan" data-en="Car Loan">Car Loan</span></label>
-        <label class="check-item"><input type="checkbox" id="chk-personalloan"> <span data-hi="Personal Loan" data-en="Personal Loan">Personal Loan</span></label>
-        <label class="check-item"><input type="checkbox" id="chk-parentsmoney"> <span data-hi="Parents Ko Paisa Bhejte Ho" data-en="Send Money to Parents">Parents Ko Paisa Bhejte Ho</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-homeloan" onchange="toggleEmiInput('homeloan')"> <span data-hi="Home Loan" data-en="Home Loan">Home Loan</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-carloan" onchange="toggleEmiInput('carloan')"> <span data-hi="Car Loan" data-en="Car Loan">Car Loan</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-personalloan" onchange="toggleEmiInput('personalloan')"> <span data-hi="Personal Loan" data-en="Personal Loan">Personal Loan</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-parentsmoney" onchange="toggleEmiInput('parentsmoney')"> <span data-hi="Parents Ko Paisa Bhejte Ho" data-en="Send Money to Parents">Parents Ko Paisa Bhejte Ho</span></label>
+      </div>
+      <div class="loan-emi-inputs" id="emiInputs">
+        <div class="loan-emi-row hidden" id="emi-homeloan">
+          <label data-hi="Home Loan EMI (Rs./month):" data-en="Home Loan EMI (Rs./month):">Home Loan EMI (Rs./month):</label>
+          <input type="number" id="emiAmt-homeloan" placeholder="e.g. 15000" min="0" step="500">
+        </div>
+        <div class="loan-emi-row hidden" id="emi-carloan">
+          <label data-hi="Car Loan EMI (Rs./month):" data-en="Car Loan EMI (Rs./month):">Car Loan EMI (Rs./month):</label>
+          <input type="number" id="emiAmt-carloan" placeholder="e.g. 8000" min="0" step="500">
+        </div>
+        <div class="loan-emi-row hidden" id="emi-personalloan">
+          <label data-hi="Personal Loan EMI (Rs./month):" data-en="Personal Loan EMI (Rs./month):">Personal Loan EMI (Rs./month):</label>
+          <input type="number" id="emiAmt-personalloan" placeholder="e.g. 5000" min="0" step="500">
+        </div>
+        <div class="loan-emi-row hidden" id="emi-parentsmoney">
+          <label data-hi="Parents Ko Kitna Bhejte Ho (Rs./month):" data-en="Amount Sent to Parents (Rs./month):">Parents Ko Kitna Bhejte Ho (Rs./month):</label>
+          <input type="number" id="emiAmt-parentsmoney" placeholder="e.g. 10000" min="0" step="500">
+        </div>
       </div>
     </div>
 
@@ -503,6 +536,10 @@ let state = {
   carLoan: false,
   personalLoan: false,
   parentsMoney: false,
+  homeLoanEmi: 0,
+  carLoanEmi: 0,
+  personalLoanEmi: 0,
+  parentsMoneyAmt: 0,
 };
 let currentStep = 1;
 
@@ -622,6 +659,12 @@ function selectDualCity(val) {
   document.getElementById('hraGroup').classList.toggle('hidden', val === 'no');
 }
 
+function toggleEmiInput(type) {
+  const checked = document.getElementById('chk-' + type).checked;
+  document.getElementById('emi-' + type).classList.toggle('hidden', !checked);
+  if (!checked) document.getElementById('emiAmt-' + type).value = '';
+}
+
 // ═══════════════════════════════════════════════════
 // CALCULATION ENGINE
 // ═══════════════════════════════════════════════════
@@ -633,9 +676,14 @@ function calculate() {
   state.carLoan = document.getElementById('chk-carloan').checked;
   state.personalLoan = document.getElementById('chk-personalloan').checked;
   state.parentsMoney = document.getElementById('chk-parentsmoney').checked;
+  state.homeLoanEmi = state.homeLoan ? (parseInt(document.getElementById('emiAmt-homeloan').value) || 0) : 0;
+  state.carLoanEmi = state.carLoan ? (parseInt(document.getElementById('emiAmt-carloan').value) || 0) : 0;
+  state.personalLoanEmi = state.personalLoan ? (parseInt(document.getElementById('emiAmt-personalloan').value) || 0) : 0;
+  state.parentsMoneyAmt = state.parentsMoney ? (parseInt(document.getElementById('emiAmt-parentsmoney').value) || 0) : 0;
 
   const income = state.salary + state.hraAmt; // effective income
   const totalIncome = income + state.extraIncome;
+  const fmt = n => 'Rs.' + n.toLocaleString('en-IN');
 
   // ── Budget percentages based on family type ──
   let budget = [];
@@ -699,29 +747,39 @@ function calculate() {
   // ── Adjust for loans ──
   let loanItems = [];
   if (state.homeLoan) {
-    const emi = Math.round(income * 0.22);
+    const emi = state.homeLoanEmi > 0 ? state.homeLoanEmi : Math.round(income * 0.22);
+    const pct = state.homeLoanEmi > 0 ? Math.round((emi / income) * 100) : 22;
+    const detailAmt = fmt(emi);
     loanItems.push({
-      cat_hi: 'Home Loan EMI', cat_en: 'Home Loan EMI', pct: 22,
-      detail_hi: 'Rs.25-30L loan, 20 saal, ~8.5%', detail_en: 'Rs.25-30L loan, 20 yrs, ~8.5%'
+      cat_hi: 'Home Loan EMI', cat_en: 'Home Loan EMI', pct: pct,
+      detail_hi: detailAmt + '/month', detail_en: detailAmt + '/month'
     });
   }
   if (state.carLoan) {
-    const emi = Math.round(income * 0.08);
+    const emi = state.carLoanEmi > 0 ? state.carLoanEmi : Math.round(income * 0.08);
+    const pct = state.carLoanEmi > 0 ? Math.round((emi / income) * 100) : 8;
+    const detailAmt = fmt(emi);
     loanItems.push({
-      cat_hi: 'Car Loan EMI', cat_en: 'Car Loan EMI', pct: 8,
-      detail_hi: 'Rs.4-6L loan, 5-7 saal, ~10%', detail_en: 'Rs.4-6L loan, 5-7 yrs, ~10%'
+      cat_hi: 'Car Loan EMI', cat_en: 'Car Loan EMI', pct: pct,
+      detail_hi: detailAmt + '/month', detail_en: detailAmt + '/month'
     });
   }
   if (state.personalLoan) {
+    const emi = state.personalLoanEmi > 0 ? state.personalLoanEmi : Math.round(income * 0.07);
+    const pct = state.personalLoanEmi > 0 ? Math.round((emi / income) * 100) : 7;
+    const detailAmt = fmt(emi);
     loanItems.push({
-      cat_hi: 'Personal Loan EMI', cat_en: 'Personal Loan EMI', pct: 7,
-      detail_hi: 'Rs.2-3L loan, 2-3 saal, ~14%', detail_en: 'Rs.2-3L loan, 2-3 yrs, ~14%'
+      cat_hi: 'Personal Loan EMI', cat_en: 'Personal Loan EMI', pct: pct,
+      detail_hi: detailAmt + '/month', detail_en: detailAmt + '/month'
     });
   }
   if (state.parentsMoney) {
+    const amt = state.parentsMoneyAmt > 0 ? state.parentsMoneyAmt : Math.round(income * 0.08);
+    const pct = state.parentsMoneyAmt > 0 ? Math.round((amt / income) * 100) : 8;
+    const detailAmt = fmt(amt);
     loanItems.push({
-      cat_hi: 'Parents Ko Paisa', cat_en: 'Money to Parents', pct: 8,
-      detail_hi: 'Monthly support', detail_en: 'Monthly support'
+      cat_hi: 'Parents Ko Paisa', cat_en: 'Money to Parents', pct: pct,
+      detail_hi: detailAmt + '/month', detail_en: detailAmt + '/month'
     });
   }
 
@@ -783,7 +841,6 @@ function calculate() {
   resultsEl.innerHTML = '';
 
   const T = (hi, en) => lang === 'hi' ? hi : en;
-  const fmt = n => 'Rs.' + n.toLocaleString('en-IN');
 
   // ── Section: Summary Banner ──
   resultsEl.innerHTML += `
@@ -841,11 +898,11 @@ function calculate() {
     const maxEMI = Math.round(income * 0.40);
     let loanCards = '';
     if (state.homeLoan) {
-      const maxLoan = Math.round(income * 0.22 * 12 * 15 * 0.55 / 10000) * 10000; // rough estimation
+      const emiAmt = state.homeLoanEmi > 0 ? state.homeLoanEmi : Math.round(income * 0.22);
       loanCards += loanCardHTML(
-        T('Home Loan','Home Loan'), fmt(Math.round(income*0.22)),
+        T('Home Loan','Home Loan'), fmt(emiAmt),
         [
-          [T('Max Loan Amount','Max Loan Amount'), 'Rs.20-30 Lakhs'],
+          [T('Aapki EMI','Your EMI'), fmt(emiAmt) + '/month'],
           [T('Interest Rate','Interest Rate'), '8.5 — 9.5%'],
           [T('Tenure','Tenure'), T('15-20 Saal','15-20 Years')],
           [T('Down Payment','Down Payment'), T('Min 20% dena padega','Min 20% required')],
@@ -853,10 +910,11 @@ function calculate() {
       );
     }
     if (state.carLoan) {
+      const emiAmt = state.carLoanEmi > 0 ? state.carLoanEmi : Math.round(income * 0.08);
       loanCards += loanCardHTML(
-        T('Car Loan','Car Loan'), fmt(Math.round(income*0.08)),
+        T('Car Loan','Car Loan'), fmt(emiAmt),
         [
-          [T('Max Loan Amount','Max Loan Amount'), 'Rs.4-6 Lakhs'],
+          [T('Aapki EMI','Your EMI'), fmt(emiAmt) + '/month'],
           [T('Interest Rate','Interest Rate'), '9 — 11%'],
           [T('Tenure','Tenure'), T('5-7 Saal','5-7 Years')],
           [T('Down Payment','Down Payment'), T('30% se zyada do','30%+ recommended')],
@@ -864,10 +922,11 @@ function calculate() {
       );
     }
     if (state.personalLoan) {
+      const emiAmt = state.personalLoanEmi > 0 ? state.personalLoanEmi : Math.round(income * 0.07);
       loanCards += loanCardHTML(
-        T('Personal Loan','Personal Loan'), fmt(Math.round(income*0.07)),
+        T('Personal Loan','Personal Loan'), fmt(emiAmt),
         [
-          [T('Max Loan Amount','Max Loan Amount'), 'Rs.2-3 Lakhs'],
+          [T('Aapki EMI','Your EMI'), fmt(emiAmt) + '/month'],
           [T('Interest Rate','Interest Rate'), '12 — 16%'],
           [T('Tenure','Tenure'), T('2-3 Saal','2-3 Years')],
           [T('Tip','Tip'), T('Jaldi chukao, interest zyada','Pay off fast, high interest')],
@@ -1099,6 +1158,11 @@ function drawPie(data, colors) {
 function restart() {
   document.getElementById('results').classList.add('hidden');
   document.getElementById('results').innerHTML = '';
+  // Reset EMI inputs
+  ['homeloan','carloan','personalloan','parentsmoney'].forEach(type => {
+    document.getElementById('emi-' + type).classList.add('hidden');
+    document.getElementById('emiAmt-' + type).value = '';
+  });
   currentStep = 1;
   goStep(1);
 }
