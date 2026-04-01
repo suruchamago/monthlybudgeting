@@ -242,9 +242,79 @@
 
   /* ── Dual City ── */
   .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ═══════ MOBILE RESPONSIVE ═══════ */
   @media (max-width: 640px) {
+    /* Header */
+    .header { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+    .header h1 { font-size: 20px; }
+    .lang-btn { padding: 5px 10px; font-size: 12px; }
+
+    /* Container */
+    .container { padding: 16px 10px 40px; }
+
+    /* Steps Bar */
+    .steps-bar { padding: 0 4px; gap: 0; margin-bottom: 20px; }
+    .step-circle { width: 30px; height: 30px; font-size: 12px; }
+    .step-label { font-size: 11px; display: none; }
+    .step-line { width: 28px; margin: 0 4px; }
+
+    /* Cards */
+    .card { padding: 20px 16px; border-radius: 12px; margin-bottom: 14px; }
+    .card h2 { font-size: 18px; }
+    .card .subtitle { font-size: 13px; margin-bottom: 16px; }
+
+    /* Option Grids */
+    .option-grid { grid-template-columns: 1fr; gap: 10px; }
+    .option-card { padding: 14px 12px; }
+    .option-card .icon { font-size: 24px; }
+    .option-card .label { font-size: 14px; }
+
+    /* Kid Rows */
+    .kid-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    .kid-row input { max-width: 100%; flex: 1; min-width: 80px; }
+
+    /* Checkboxes */
+    .checkbox-group { flex-direction: column; gap: 8px; }
+    .check-item { width: 100%; }
+
+    /* Buttons */
+    .btn-row { flex-direction: column-reverse; gap: 8px; }
+    .btn { width: 100%; text-align: center; padding: 14px 20px; }
+
+    /* Budget Table */
+    .budget-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .budget-table th, .budget-table td { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+
+    /* Pie Chart */
+    .chart-wrap { flex-direction: column; gap: 16px; }
+    .pie-container { width: 180px; height: 180px; }
+    .pie-container canvas { width: 180px; height: 180px; }
+    .pie-center .total { font-size: 16px; }
+    .legend { align-items: flex-start; width: 100%; }
+    .legend-item { font-size: 12px; }
+
+    /* Loan Grid */
+    .loan-grid { grid-template-columns: 1fr; }
+    .loan-card .lc-header .max-amt { font-size: 18px; }
+    .emi-banner { padding: 16px; }
+    .emi-banner .big { font-size: 22px; }
+
+    /* Goal Grid */
+    .goal-grid { grid-template-columns: 1fr; }
+
+    /* Dual Grid */
     .dual-grid { grid-template-columns: 1fr; }
-    .chart-wrap { flex-direction: column; }
+
+    /* Result Section */
+    .result-section h3 { font-size: 17px; }
+
+    /* Restart */
+    .restart-btn { width: 100%; padding: 14px 20px; font-size: 15px; }
+
+    /* Tips */
+    .tip-item { padding: 12px; }
+    .tip-text { font-size: 13px; }
   }
   .dual-card {
     background: white; border-radius: 14px; padding: 20px; box-shadow: var(--card-shadow);
@@ -983,8 +1053,13 @@ function stateVar(name) {
 function drawPie(data, colors) {
   const canvas = document.getElementById('pieChart');
   if (!canvas) return;
+  const size = canvas.parentElement.offsetWidth;
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
   const ctx = canvas.getContext('2d');
-  const cx = 110, cy = 110, r = 95;
+  const cx = size / 2, cy = size / 2, r = size * 0.43;
   let startAngle = -Math.PI / 2;
 
   data.forEach((item, i) => {
@@ -1000,7 +1075,7 @@ function drawPie(data, colors) {
 
   // Donut hole
   ctx.beginPath();
-  ctx.arc(cx, cy, 55, 0, 2 * Math.PI);
+  ctx.arc(cx, cy, size * 0.25, 0, 2 * Math.PI);
   ctx.fillStyle = '#FFFFFF';
   ctx.fill();
 }
