@@ -243,6 +243,23 @@
   .note-tag.tight { background: #FEF3C7; color: #92400E; }
   .note-tag.over { background: #FEE2E2; color: #991B1B; }
 
+  /* ── EMI Summary Banner ── */
+  .emi-summary {
+    margin-top: 20px; padding: 16px 20px; border-radius: 12px;
+    border: 2px solid; display: flex; flex-direction: column; gap: 8px;
+  }
+  .emi-summary.ok { border-color: #6EE7B7; background: #ECFDF5; }
+  .emi-summary.warning { border-color: #FCD34D; background: #FFFBEB; }
+  .emi-summary.danger { border-color: #FCA5A5; background: #FEF2F2; }
+  .emi-summary-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .emi-summary-detail { font-size: 13px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .emi-summary-detail .emi-chip {
+    background: rgba(0,0,0,0.06); padding: 4px 10px; border-radius: 6px; font-weight: 600;
+  }
+  .emi-summary-bar { height: 8px; border-radius: 4px; background: #E2E8F0; overflow: hidden; margin-top: 4px; }
+  .emi-summary-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .emi-summary-note { font-size: 12px; color: var(--muted); }
+
   /* ── Pie Chart ── */
   .chart-wrap {
     display: flex; align-items: center; justify-content: center; gap: 24px;
@@ -506,7 +523,7 @@
       <input type="number" id="rentAmt" value="8000" min="0" step="500">
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="dualCityGroup">
       <label data-hi="Kya dono alag city mein rehte ho?" data-en="Living in different cities?">Kya dono alag city mein rehte ho?</label>
       <div class="option-grid" id="dualCityOptions">
         <div class="option-card" onclick="selectDualCity('no')" id="opt-samecity">
@@ -638,6 +655,21 @@ function goStep(n) {
   const el = document.getElementById('step' + n);
   if (el) el.classList.remove('hidden');
   currentStep = n;
+
+  // Hide dual city question for singles
+  if (n === 3) {
+    const dualCityGroup = document.getElementById('dualCityGroup');
+    const hraGroup = document.getElementById('hraGroup');
+    if (state.familyType === 'single') {
+      dualCityGroup.classList.add('hidden');
+      hraGroup.classList.add('hidden');
+      state.dualCity = false;
+      state.hraAmt = 0;
+    } else {
+      dualCityGroup.classList.remove('hidden');
+    }
+  }
+
   renderSteps();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1279,6 +1311,51 @@ function renderBudgetSection() {
           </td>
         </tr>`).join('')}</tbody>
       </table>
+      ${(() => {
+        const emiCats = ['Home Loan EMI','Car Loan EMI','Personal Loan EMI','Money to Parents'];
+        const emiItems = budget.filter(b => emiCats.includes(b.cat_en));
+        if (emiItems.length === 0) return '';
+
+        const totalEmiAmt = emiItems.reduce((s, b) => s + b.amount, 0);
+        const totalEmiPct = emiItems.reduce((s, b) => s + b.pct, 0);
+        const capPct = 40;
+        const capAmt = Math.round(income * capPct / 100);
+        const overAmt = totalEmiAmt - capAmt;
+        const barPct = Math.min(100, Math.round((totalEmiAmt / capAmt) * 100));
+        const barColor = totalEmiPct > capPct ? '#EF4444' : totalEmiPct > 30 ? '#F59E0B' : '#10B981';
+        const statusCls = totalEmiPct > capPct ? 'danger' : totalEmiPct > 30 ? 'warning' : 'ok';
+
+        const chips = emiItems.map(b => `<span class="emi-chip">${b['cat_' + lang]}: ${fmt(b.amount)}</span>`).join('');
+
+        let verdict;
+        if (totalEmiPct > capPct) {
+          verdict = T(
+            `⚠ Total EMI ${totalEmiPct}% hai — cap ${capPct}% (${fmt(capAmt)}) se ${fmt(overAmt)} zyada hai. ${fmt(overAmt)} kam karo EMIs mein.`,
+            `⚠ Total EMI is ${totalEmiPct}% — exceeds the ${capPct}% cap (${fmt(capAmt)}) by ${fmt(overAmt)}. Reduce EMIs by ${fmt(overAmt)}.`
+          );
+        } else if (totalEmiPct > 30) {
+          const roomLeft = capAmt - totalEmiAmt;
+          verdict = T(
+            `⚠ Total EMI ${totalEmiPct}% hai — cap (${capPct}%) ke andar hai par thoda zyada hai. Sirf ${fmt(roomLeft)} ki aur jagah hai.`,
+            `⚠ Total EMI is ${totalEmiPct}% — within the ${capPct}% cap but on the higher side. Only ${fmt(roomLeft)} room left.`
+          );
+        } else {
+          const roomLeft = capAmt - totalEmiAmt;
+          verdict = T(
+            `✓ Total EMI ${totalEmiPct}% hai — cap (${capPct}%) ke andar hai. ${fmt(roomLeft)} ki aur capacity hai.`,
+            `✓ Total EMI is ${totalEmiPct}% — well within the ${capPct}% cap. ${fmt(roomLeft)} capacity remaining.`
+          );
+        }
+
+        return `
+          <div class="emi-summary ${statusCls}">
+            <div class="emi-summary-title">${T('Total EMI / Commitments','Total EMI / Commitments')}: ${fmt(totalEmiAmt)} (${totalEmiPct}%) &nbsp;|&nbsp; ${T('Max Cap','Max Cap')}: ${fmt(capAmt)} (${capPct}%)</div>
+            <div class="emi-summary-detail">${chips}</div>
+            <div class="emi-summary-bar"><div class="emi-summary-bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
+            <div class="emi-summary-note">${verdict}</div>
+          </div>
+        `;
+      })()}
       <p style="margin-top:12px;font-size:12px;color:var(--muted);">${T('💡 Kisi bhi category mein paisa kam karo — bacha hua Savings mein chala jayega.','💡 Reduce any category — the saved amount goes to Savings & Investments.')}</p>
     </div>
   `;
