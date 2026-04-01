@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paisa Planner — Smart Budget Calculator</title>
+<style>
+  :root {
+    --primary: #028090;
+    --secondary: #00A896;
+    --accent: #02C39A;
+    --dark: #1A2F3A;
+    --light-bg: #F0F7F4;
+    --white: #FFFFFF;
+    --muted: #64748B;
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --gold: #F5A623;
+    --rupee-green: #059669;
+    --danger: #EF4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', 'Calibri', system-ui, sans-serif;
+    background: var(--light-bg);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--dark);
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 4px solid var(--accent);
+  }
+  .header h1 { color: var(--white); font-size: 24px; font-family: Georgia, serif; }
+  .header h1 span { color: var(--accent); }
+  .lang-toggle {
+    display: flex; gap: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 3px;
+  }
+  .lang-btn {
+    padding: 6px 14px; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    background: transparent; color: rgba(255,255,255,0.6); transition: all 0.2s;
+  }
+  .lang-btn.active { background: var(--accent); color: var(--dark); }
+
+  /* ── Container ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* ── Step Indicator ── */
+  .steps-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin-bottom: 32px; padding: 0 20px;
+  }
+  .step-item {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    background: #E2E8F0; color: var(--muted); transition: all 0.3s;
+  }
+  .step-circle.active { background: var(--primary); color: white; }
+  .step-circle.done { background: var(--accent); color: white; }
+  .step-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .step-label.active { color: var(--dark); font-weight: 700; }
+  .step-line { width: 60px; height: 3px; background: #E2E8F0; margin: 0 8px; border-radius: 2px; }
+  .step-line.done { background: var(--accent); }
+
+  /* ── Card ── */
+  .card {
+    background: var(--white); border-radius: 16px;
+    padding: 32px; box-shadow: var(--card-shadow);
+    margin-bottom: 20px; animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card h2 { font-family: Georgia, serif; color: var(--dark); font-size: 22px; margin-bottom: 6px; }
+  .card .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+  /* ── Form Elements ── */
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; color: var(--dark); }
+  .form-group .hint { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  input[type="number"], input[type="text"] {
+    width: 100%; padding: 12px 16px; border: 2px solid #E2E8F0;
+    border-radius: 10px; font-size: 16px; outline: none; transition: border 0.2s;
+    font-family: inherit;
+  }
+  input:focus { border-color: var(--primary); }
+
+  .option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .option-card {
+    border: 2px solid #E2E8F0; border-radius: 12px; padding: 16px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: var(--white);
+  }
+  .option-card:hover { border-color: var(--secondary); background: #F0FDFA; }
+  .option-card.selected { border-color: var(--primary); background: #F0FDFA; box-shadow: 0 0 0 3px rgba(2,128,144,0.15); }
+  .option-card .icon { font-size: 28px; margin-bottom: 6px; }
+  .option-card .label { font-weight: 700; font-size: 15px; color: var(--dark); }
+  .option-card .desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Kid Row ── */
+  .kid-row {
+    display: flex; align-items: center; gap: 12px;
+    background: #F8FAFC; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px;
+  }
+  .kid-row span { font-weight: 600; color: var(--primary); min-width: 60px; }
+  .kid-row input { flex: 1; max-width: 120px; }
+  .kid-row .remove-kid {
+    background: none; border: none; color: var(--danger);
+    font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  }
+  .kid-row .remove-kid:hover { background: #FEE2E2; }
+  .add-kid-btn {
+    background: none; border: 2px dashed var(--secondary); color: var(--secondary);
+    border-radius: 10px; padding: 10px; width: 100%; cursor: pointer;
+    font-weight: 600; font-size: 14px; transition: all 0.2s;
+  }
+  .add-kid-btn:hover { background: #F0FDFA; }
+
+  /* ── Checkboxes ── */
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  .check-item {
+    display: flex; align-items: center; gap: 8px;
+    background: #F8FAFC; padding: 10px 16px; border-radius: 10px; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.2s;
+  }
+  .check-item:hover { border-color: var(--secondary); }
+  .check-item input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;
+  }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
+  .btn {
+    padding: 12px 28px; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #026d7a; }
+  .btn-secondary { background: #E2E8F0; color: var(--dark); }
+  .btn-secondary:hover { background: #CBD5E1; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Results ── */
+  .result-section { margin-bottom: 32px; }
+  .result-section h3 {
+    font-family: Georgia, serif; font-size: 20px; color: var(--dark);
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 3px solid var(--accent);
+    display: inline-block;
+  }
+
+  .budget-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .budget-table th {
+    background: var(--dark); color: white; padding: 12px 16px;
+    text-align: left; font-size: 13px; font-weight: 600;
+  }
+  .budget-table th:first-child { border-radius: 10px 0 0 0; }
+  .budget-table th:last-child { border-radius: 0 10px 0 0; }
+  .budget-table td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #F1F5F9; }
+  .budget-table tr:nth-child(even) { background: #F8FAFC; }
+  .budget-table .pct { font-weight: 700; color: var(--primary); }
+  .budget-table .amt { font-weight: 700; color: var(--rupee-green); }
+
+  /* ── Pie Chart ── */
+  .chart-wrap {
+    display: flex; align-items: center; justify-content: center; gap: 24px;
+    flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .pie-container { position: relative; width: 220px; height: 220px; }
+  .pie-container canvas { width: 220px; height: 220px; }
+  .pie-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .pie-center .total { font-size: 20px; font-weight: 800; color: var(--dark); }
+  .pie-center .lbl { font-size: 11px; color: var(--muted); }
+  .legend { display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ── Loan Cards ── */
+  .loan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .loan-card {
+    background: var(--white); border-radius: 14px; overflow: hidden;
+    box-shadow: var(--card-shadow); border-top: 4px solid var(--primary);
+  }
+  .loan-card .lc-header { padding: 16px 20px; background: #F8FAFC; }
+  .loan-card .lc-header h4 { font-size: 16px; color: var(--dark); }
+  .loan-card .lc-header .max-amt { font-size: 22px; font-weight: 800; color: var(--primary); }
+  .loan-card .lc-body { padding: 16px 20px; }
+  .loan-card .lc-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #F1F5F9; }
+  .loan-card .lc-row:last-child { border: none; }
+  .loan-card .lc-row span:last-child { font-weight: 600; color: var(--dark); }
+  .loan-card .lc-row span:first-child { color: var(--muted); }
+
+  .emi-banner {
+    background: linear-gradient(135deg, var(--dark), #264653);
+    color: white; border-radius: 12px; padding: 20px 24px;
+    text-align: center; margin-top: 20px;
+  }
+  .emi-banner .big { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .emi-banner .note { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+  /* ── Education / Wedding Cards ── */
+  .goal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .goal-card {
+    background: white; border-radius: 14px; padding: 20px; box-shadow: var(--card-shadow);
+    border-left: 5px solid var(--secondary);
+  }
+  .goal-card h4 { font-size: 16px; color: var(--dark); margin-bottom: 4px; }
+  .goal-card .kid-name { color: var(--primary); font-weight: 700; }
+  .goal-card .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #F1F5F9; }
+  .goal-card .row:last-child { border: none; }
+  .goal-card .row span:first-child { color: var(--muted); }
+  .goal-card .row span:last-child { font-weight: 600; }
+  .goal-card .highlight { color: var(--rupee-green); font-weight: 800; font-size: 18px; display: block; margin-top: 8px; }
+
+  /* ── Tips ── */
+  .tip-list { display: flex; flex-direction: column; gap: 10px; }
+  .tip-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #F8FAFC; border-radius: 10px; padding: 14px 16px;
+  }
+  .tip-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--primary); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .tip-text { font-size: 14px; color: var(--dark); line-height: 1.5; }
+
+  /* ── Dual City ── */
+  .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) {
+    .dual-grid { grid-template-columns: 1fr; }
+    .chart-wrap { flex-direction: column; }
+  }
+  .dual-card {
+    background: white; border-radius: 14px; padding: 20px; box-shadow: var(--card-shadow);
+  }
+  .dual-card h4 { font-size: 16px; color: var(--dark); margin-bottom: 12px; font-family: Georgia, serif; }
+  .dual-card .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #F1F5F9; }
+  .dual-card .row:last-child { border: none; }
+
+  /* ── Restart ── */
+  .restart-btn {
+    display: block; margin: 0 auto; padding: 14px 36px;
+    background: var(--primary); color: white; border: none;
+    border-radius: 12px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .restart-btn:hover { background: #026d7a; transform: scale(1.02); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══════ Header ═══════ -->
+<div class="header">
+  <h1><span>Paisa</span> Planner</h1>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('hi')" id="lang-hi">Hinglish</button>
+    <button class="lang-btn" onclick="setLang('en')" id="lang-en">English</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Step Indicator -->
+  <div class="steps-bar" id="stepsBar"></div>
+
+  <!-- ═══════ STEP 1: Salary ═══════ -->
+  <div class="card step-card" id="step1">
+    <h2 data-hi="Apni Monthly Salary Daalo" data-en="Enter Your Monthly Salary">Apni Monthly Salary Daalo</h2>
+    <p class="subtitle" data-hi="Hum isi ke base pe aapka budget banayenge" data-en="We'll build your budget based on this">Hum isi ke base pe aapka budget banayenge</p>
+    <div class="form-group">
+      <label data-hi="Monthly In-Hand Salary (Rs.)" data-en="Monthly In-Hand Salary (Rs.)">Monthly In-Hand Salary (Rs.)</label>
+      <input type="number" id="salary" value="70000" min="10000" step="1000" placeholder="e.g. 70000">
+    </div>
+    <div class="form-group">
+      <label data-hi="Extra Monthly Income (Rs.)" data-en="Extra Monthly Income (Rs.)">Extra Monthly Income (Rs.)</label>
+      <p class="hint" data-hi="Agar koi side income, onsite allowance, etc. hai" data-en="Any side income, onsite allowance, etc.">Agar koi side income, onsite allowance, etc. hai</p>
+      <input type="number" id="extraIncome" value="0" min="0" step="500" placeholder="e.g. 8000">
+    </div>
+    <div class="btn-row">
+      <span></span>
+      <button class="btn btn-primary" onclick="goStep(2)" data-hi="Aage Badho →" data-en="Next →">Aage Badho →</button>
+    </div>
+  </div>
+
+  <!-- ═══════ STEP 2: Family ═══════ -->
+  <div class="card step-card hidden" id="step2">
+    <h2 data-hi="Aapka Parivaar" data-en="Your Family">Aapka Parivaar</h2>
+    <p class="subtitle" data-hi="Family size se budget bahut badalta hai" data-en="Budget changes a lot based on family size">Family size se budget bahut badalta hai</p>
+    <div class="form-group">
+      <label data-hi="Aap abhi kya ho?" data-en="What's your current status?">Aap abhi kya ho?</label>
+      <div class="option-grid">
+        <div class="option-card" onclick="selectFamily('single')" id="opt-single">
+          <div class="icon">👤</div>
+          <div class="label" data-hi="Single" data-en="Single">Single</div>
+          <div class="desc" data-hi="Akele rehte ho" data-en="Living alone">Akele rehte ho</div>
+        </div>
+        <div class="option-card" onclick="selectFamily('couple')" id="opt-couple">
+          <div class="icon">👫</div>
+          <div class="label" data-hi="Married / Couple" data-en="Married / Couple">Married / Couple</div>
+          <div class="desc" data-hi="Husband-wife saath" data-en="Living with spouse">Husband-wife saath</div>
+        </div>
+        <div class="option-card" onclick="selectFamily('family')" id="opt-family">
+          <div class="icon">👨‍👩‍👧‍👦</div>
+          <div class="label" data-hi="Family + Bacche" data-en="Family + Kids">Family + Bacche</div>
+          <div class="desc" data-hi="Bacche bhi hain" data-en="Have children">Bacche bhi hain</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kids Section (shown only if family) -->
+    <div class="form-group hidden" id="kidsSection">
+      <label data-hi="Bacchon ki details daalo" data-en="Enter children's details">Bacchon ki details daalo</label>
+      <p class="hint" data-hi="Umar se education/shaadi ka fund calculate hoga" data-en="Age helps calculate education/wedding fund">Umar se education/shaadi ka fund calculate hoga</p>
+      <div id="kidsList"></div>
+      <button class="add-kid-btn" onclick="addKid()" data-hi="+ Aur Baccha Add Karo" data-en="+ Add Another Child">+ Aur Baccha Add Karo</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(1)" data-hi="← Peeche" data-en="← Back">← Peeche</button>
+      <button class="btn btn-primary" onclick="goStep(3)" id="btn-step2-next" disabled data-hi="Aage Badho →" data-en="Next →">Aage Badho →</button>
+    </div>
+  </div>
+
+  <!-- ═══════ STEP 3: Lifestyle ═══════ -->
+  <div class="card step-card hidden" id="step3">
+    <h2 data-hi="Aapki Situation" data-en="Your Situation">Aapki Situation</h2>
+    <p class="subtitle" data-hi="Kuch aur cheezein batao taaki budget sahi bane" data-en="A few more details for an accurate budget">Kuch aur cheezein batao taaki budget sahi bane</p>
+
+    <div class="form-group">
+      <label data-hi="Kya rent dena padta hai?" data-en="Do you pay rent?">Kya rent dena padta hai?</label>
+      <div class="option-grid">
+        <div class="option-card" onclick="selectRent('no')" id="opt-norent">
+          <div class="icon">🏠</div>
+          <div class="label" data-hi="Nahi — Govt. Quarter" data-en="No — Govt. Quarter">Nahi — Govt. Quarter</div>
+        </div>
+        <div class="option-card" onclick="selectRent('yes')" id="opt-yesrent">
+          <div class="icon">🏢</div>
+          <div class="label" data-hi="Haan — Rent Deta Hu" data-en="Yes — I Pay Rent">Haan — Rent Deta Hu</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group hidden" id="rentAmtGroup">
+      <label data-hi="Monthly Rent (Rs.)" data-en="Monthly Rent (Rs.)">Monthly Rent (Rs.)</label>
+      <input type="number" id="rentAmt" value="8000" min="0" step="500">
+    </div>
+
+    <div class="form-group">
+      <label data-hi="Kya dono alag city mein rehte ho?" data-en="Living in different cities?">Kya dono alag city mein rehte ho?</label>
+      <div class="option-grid" id="dualCityOptions">
+        <div class="option-card" onclick="selectDualCity('no')" id="opt-samecity">
+          <div class="icon">📍</div>
+          <div class="label" data-hi="Ek Hi City" data-en="Same City">Ek Hi City</div>
+        </div>
+        <div class="option-card" onclick="selectDualCity('yes')" id="opt-diffcity">
+          <div class="icon">📍📍</div>
+          <div class="label" data-hi="Alag-Alag City" data-en="Different Cities">Alag-Alag City</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group hidden" id="hraGroup">
+      <label data-hi="HRA Milta Hai? (Rs./month)" data-en="HRA Received (Rs./month)">HRA Milta Hai? (Rs./month)</label>
+      <input type="number" id="hraAmt" value="5000" min="0" step="500">
+    </div>
+
+    <div class="form-group">
+      <label data-hi="Kya loans liye hain ya lena chahte ho?" data-en="Do you have or want loans?">Kya loans liye hain ya lena chahte ho?</label>
+      <div class="checkbox-group">
+        <label class="check-item"><input type="checkbox" id="chk-homeloan"> <span data-hi="Home Loan" data-en="Home Loan">Home Loan</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-carloan"> <span data-hi="Car Loan" data-en="Car Loan">Car Loan</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-personalloan"> <span data-hi="Personal Loan" data-en="Personal Loan">Personal Loan</span></label>
+        <label class="check-item"><input type="checkbox" id="chk-parentsmoney"> <span data-hi="Parents Ko Paisa Bhejte Ho" data-en="Send Money to Parents">Parents Ko Paisa Bhejte Ho</span></label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)" data-hi="← Peeche" data-en="← Back">← Peeche</button>
+      <button class="btn btn-primary" onclick="calculate()" data-hi="Budget Banao! 🎯" data-en="Calculate Budget! 🎯">Budget Banao! 🎯</button>
+    </div>
+  </div>
+
+  <!-- ═══════ RESULTS ═══════ -->
+  <div class="hidden" id="results"></div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let lang = 'hi';
+let state = {
+  salary: 70000,
+  extraIncome: 0,
+  familyType: null,     // 'single', 'couple', 'family'
+  kids: [],             // [{age: 5}, ...]
+  paysRent: false,
+  rentAmt: 0,
+  dualCity: false,
+  hraAmt: 0,
+  homeLoan: false,
+  carLoan: false,
+  personalLoan: false,
+  parentsMoney: false,
+};
+let currentStep = 1;
+
+// ═══════════════════════════════════════════════════
+// LANGUAGE
+// ═══════════════════════════════════════════════════
+function setLang(l) {
+  lang = l;
+  document.getElementById('lang-hi').classList.toggle('active', l === 'hi');
+  document.getElementById('lang-en').classList.toggle('active', l === 'en');
+  document.querySelectorAll('[data-hi]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + l);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// STEP NAVIGATION
+// ═══════════════════════════════════════════════════
+const stepNames = {
+  hi: ['Salary', 'Parivaar', 'Lifestyle', 'Budget!'],
+  en: ['Salary', 'Family', 'Lifestyle', 'Budget!'],
+};
+
+function renderSteps() {
+  const bar = document.getElementById('stepsBar');
+  const names = stepNames[lang];
+  let html = '';
+  for (let i = 1; i <= 4; i++) {
+    const isActive = i === currentStep;
+    const isDone = i < currentStep;
+    html += `<div class="step-item">
+      <div class="step-circle ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}">${isDone ? '✓' : i}</div>
+      <span class="step-label ${isActive ? 'active' : ''}">${names[i-1]}</span>
+    </div>`;
+    if (i < 4) html += `<div class="step-line ${isDone ? 'done' : ''}"></div>`;
+  }
+  bar.innerHTML = html;
+}
+
+function goStep(n) {
+  // Validate before going forward
+  if (n === 2) {
+    state.salary = Math.max(5000, parseInt(document.getElementById('salary').value) || 70000);
+    state.extraIncome = Math.max(0, parseInt(document.getElementById('extraIncome').value) || 0);
+  }
+  if (n === 3 && !state.familyType) return;
+
+  document.querySelectorAll('.step-card').forEach(c => c.classList.add('hidden'));
+  const el = document.getElementById('step' + n);
+  if (el) el.classList.remove('hidden');
+  currentStep = n;
+  renderSteps();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════
+// FAMILY SELECTION
+// ═══════════════════════════════════════════════════
+function selectFamily(type) {
+  state.familyType = type;
+  document.querySelectorAll('#step2 .option-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('opt-' + type).classList.add('selected');
+  document.getElementById('btn-step2-next').disabled = false;
+
+  const kidsSection = document.getElementById('kidsSection');
+  if (type === 'family') {
+    kidsSection.classList.remove('hidden');
+    if (state.kids.length === 0) addKid();
+  } else {
+    kidsSection.classList.add('hidden');
+    state.kids = [];
+  }
+}
+
+function addKid() {
+  if (state.kids.length >= 5) return;
+  state.kids.push({ age: 3 });
+  renderKids();
+}
+
+function removeKid(idx) {
+  state.kids.splice(idx, 1);
+  if (state.kids.length === 0) state.kids.push({ age: 3 });
+  renderKids();
+}
+
+function renderKids() {
+  const el = document.getElementById('kidsList');
+  const labels = lang === 'hi'
+    ? { kid: 'Baccha', age: 'Umar (saal)', remove: '×' }
+    : { kid: 'Child', age: 'Age (years)', remove: '×' };
+  el.innerHTML = state.kids.map((k, i) => `
+    <div class="kid-row">
+      <span>${labels.kid} ${i + 1}</span>
+      <input type="number" value="${k.age}" min="0" max="18" placeholder="${labels.age}"
+        onchange="state.kids[${i}].age = parseInt(this.value)||0">
+      ${state.kids.length > 1 ? `<button class="remove-kid" onclick="removeKid(${i})">${labels.remove}</button>` : ''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// RENT / CITY SELECTION
+// ═══════════════════════════════════════════════════
+function selectRent(val) {
+  state.paysRent = val === 'yes';
+  document.getElementById('opt-norent').classList.toggle('selected', val === 'no');
+  document.getElementById('opt-yesrent').classList.toggle('selected', val === 'yes');
+  document.getElementById('rentAmtGroup').classList.toggle('hidden', val === 'no');
+}
+
+function selectDualCity(val) {
+  state.dualCity = val === 'yes';
+  document.getElementById('opt-samecity').classList.toggle('selected', val === 'no');
+  document.getElementById('opt-diffcity').classList.toggle('selected', val === 'yes');
+  document.getElementById('hraGroup').classList.toggle('hidden', val === 'no');
+}
+
+// ═══════════════════════════════════════════════════
+// CALCULATION ENGINE
+// ═══════════════════════════════════════════════════
+function calculate() {
+  // Gather state
+  state.rentAmt = state.paysRent ? (parseInt(document.getElementById('rentAmt').value) || 0) : 0;
+  state.hraAmt = state.dualCity ? (parseInt(document.getElementById('hraAmt').value) || 0) : 0;
+  state.homeLoan = document.getElementById('chk-homeloan').checked;
+  state.carLoan = document.getElementById('chk-carloan').checked;
+  state.personalLoan = document.getElementById('chk-personalloan').checked;
+  state.parentsMoney = document.getElementById('chk-parentsmoney').checked;
+
+  const income = state.salary + state.hraAmt; // effective income
+  const totalIncome = income + state.extraIncome;
+
+  // ── Budget percentages based on family type ──
+  let budget = [];
+  const isFamily = state.familyType === 'family';
+  const isSingle = state.familyType === 'single';
+
+  if (isSingle) {
+    budget = [
+      { cat_hi: 'Groceries & Khaana', cat_en: 'Groceries & Food', pct: 12 },
+      { cat_hi: 'Utilities & Bills', cat_en: 'Utilities & Bills', pct: 7 },
+      { cat_hi: 'Transport', cat_en: 'Transport', pct: 7 },
+      { cat_hi: 'Personal & Lifestyle', cat_en: 'Personal & Lifestyle', pct: 12 },
+      { cat_hi: 'Savings & Investments', cat_en: 'Savings & Investments', pct: 45 },
+      { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 17 },
+    ];
+  } else if (!isFamily) {
+    // Couple
+    budget = [
+      { cat_hi: 'Groceries & Khaana', cat_en: 'Groceries & Food', pct: 15 },
+      { cat_hi: 'Utilities & Bills', cat_en: 'Utilities & Bills', pct: 8 },
+      { cat_hi: 'Transport', cat_en: 'Transport', pct: 7 },
+      { cat_hi: 'Personal & Lifestyle', cat_en: 'Personal & Lifestyle', pct: 10 },
+      { cat_hi: 'Savings & Investments', cat_en: 'Savings & Investments', pct: 40 },
+      { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 20 },
+    ];
+  } else {
+    // Family with kids
+    budget = [
+      { cat_hi: 'Groceries & Khaana', cat_en: 'Groceries & Food', pct: 20 },
+      { cat_hi: 'Utilities & Bills', cat_en: 'Utilities & Bills', pct: 10 },
+      { cat_hi: 'Transport', cat_en: 'Transport', pct: 7 },
+      { cat_hi: 'School Fees & Education', cat_en: 'School Fees & Education', pct: 12 },
+      { cat_hi: 'Personal & Lifestyle', cat_en: 'Personal & Lifestyle', pct: 6 },
+      { cat_hi: 'Savings & Investments', cat_en: 'Savings & Investments', pct: 30 },
+      { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 15 },
+    ];
+  }
+
+  // ── Adjust for rent ──
+  if (state.paysRent && state.rentAmt > 0) {
+    const rentPct = Math.round((state.rentAmt / income) * 100);
+    budget.unshift({ cat_hi: 'Ghar Ka Rent', cat_en: 'House Rent', pct: rentPct });
+    // Reduce savings & personal proportionally
+    let excess = rentPct;
+    for (let item of budget) {
+      if (item.cat_en === 'Savings & Investments' && excess > 0) {
+        const cut = Math.min(excess, Math.floor(item.pct * 0.6));
+        item.pct -= cut; excess -= cut;
+      }
+      if (item.cat_en === 'Personal & Lifestyle' && excess > 0) {
+        const cut = Math.min(excess, Math.floor(item.pct * 0.5));
+        item.pct -= cut; excess -= cut;
+      }
+      if (item.cat_en === 'Emergency + Healthcare' && excess > 0) {
+        const cut = Math.min(excess, 3);
+        item.pct -= cut; excess -= cut;
+      }
+    }
+  }
+
+  // ── Adjust for loans ──
+  let loanItems = [];
+  if (state.homeLoan) {
+    const emi = Math.round(income * 0.22);
+    loanItems.push({
+      cat_hi: 'Home Loan EMI', cat_en: 'Home Loan EMI', pct: 22,
+      detail_hi: 'Rs.25-30L loan, 20 saal, ~8.5%', detail_en: 'Rs.25-30L loan, 20 yrs, ~8.5%'
+    });
+  }
+  if (state.carLoan) {
+    const emi = Math.round(income * 0.08);
+    loanItems.push({
+      cat_hi: 'Car Loan EMI', cat_en: 'Car Loan EMI', pct: 8,
+      detail_hi: 'Rs.4-6L loan, 5-7 saal, ~10%', detail_en: 'Rs.4-6L loan, 5-7 yrs, ~10%'
+    });
+  }
+  if (state.personalLoan) {
+    loanItems.push({
+      cat_hi: 'Personal Loan EMI', cat_en: 'Personal Loan EMI', pct: 7,
+      detail_hi: 'Rs.2-3L loan, 2-3 saal, ~14%', detail_en: 'Rs.2-3L loan, 2-3 yrs, ~14%'
+    });
+  }
+  if (state.parentsMoney) {
+    loanItems.push({
+      cat_hi: 'Parents Ko Paisa', cat_en: 'Money to Parents', pct: 8,
+      detail_hi: 'Monthly support', detail_en: 'Monthly support'
+    });
+  }
+
+  if (loanItems.length > 0) {
+    let totalLoanPct = loanItems.reduce((s, l) => s + l.pct, 0);
+    // Cap total loan at 40%
+    if (totalLoanPct > 40) {
+      const scale = 40 / totalLoanPct;
+      loanItems.forEach(l => l.pct = Math.round(l.pct * scale));
+      totalLoanPct = loanItems.reduce((s, l) => s + l.pct, 0);
+    }
+    // Reduce from savings and discretionary
+    let excess = totalLoanPct;
+    for (let item of budget) {
+      if (item.cat_en === 'Savings & Investments' && excess > 0) {
+        const cut = Math.min(excess, Math.floor(item.pct * 0.5));
+        item.pct -= cut; excess -= cut;
+      }
+    }
+    for (let item of budget) {
+      if (item.cat_en === 'Personal & Lifestyle' && excess > 0) {
+        const cut = Math.min(excess, Math.floor(item.pct * 0.6));
+        item.pct -= cut; excess -= cut;
+      }
+    }
+    for (let item of budget) {
+      if (item.cat_en === 'Groceries & Food' && excess > 0) {
+        const cut = Math.min(excess, 3);
+        item.pct -= cut; excess -= cut;
+      }
+      if (item.cat_en === 'Emergency + Healthcare' && excess > 0) {
+        const cut = Math.min(excess, 3);
+        item.pct -= cut; excess -= cut;
+      }
+    }
+    budget = [...loanItems, ...budget];
+  }
+
+  // Normalize to 100%
+  const totalPct = budget.reduce((s, b) => s + b.pct, 0);
+  if (totalPct !== 100) {
+    const diff = 100 - totalPct;
+    const savingsItem = budget.find(b => b.cat_en === 'Savings & Investments');
+    if (savingsItem) savingsItem.pct += diff;
+    else budget[budget.length - 1].pct += diff;
+  }
+
+  // Calculate amounts
+  budget.forEach(b => {
+    b.amount = Math.round(income * b.pct / 100);
+  });
+
+  // ── Render results ──
+  currentStep = 4;
+  renderSteps();
+  document.querySelectorAll('.step-card').forEach(c => c.classList.add('hidden'));
+  const resultsEl = document.getElementById('results');
+  resultsEl.classList.remove('hidden');
+  resultsEl.innerHTML = '';
+
+  const T = (hi, en) => lang === 'hi' ? hi : en;
+  const fmt = n => 'Rs.' + n.toLocaleString('en-IN');
+
+  // ── Section: Summary Banner ──
+  resultsEl.innerHTML += `
+    <div class="card" style="background: linear-gradient(135deg, ${stateVar('--dark')}, #264653); color: white; text-align: center;">
+      <h2 style="color: var(--accent); font-size: 26px;">${T('Aapka Budget Taiyaar Hai!', 'Your Budget is Ready!')}</h2>
+      <p style="color: rgba(255,255,255,0.7); margin-top: 8px;">
+        ${T('Monthly Income', 'Monthly Income')}: <strong style="color: white;">${fmt(income)}</strong>
+        ${state.extraIncome > 0 ? ` &nbsp;|&nbsp; ${T('Extra Income', 'Extra Income')}: <strong style="color: var(--accent);">${fmt(state.extraIncome)}</strong>` : ''}
+        &nbsp;|&nbsp; ${T('Family', 'Family')}: <strong style="color: white;">${
+          isSingle ? T('Single','Single') : isFamily ? T(state.kids.length + ' Bacche', state.kids.length + ' Kids') : T('Couple','Couple')
+        }</strong>
+      </p>
+    </div>
+  `;
+
+  // ── Section: Budget Split ──
+  const pieColors = ['#028090','#00A896','#02C39A','#059669','#0891B2','#6366F1','#F59E0B','#14B8A6','#8B5CF6','#EC4899','#EF4444'];
+  let budgetHTML = `
+    <div class="card result-section">
+      <h3>${T('Monthly Budget Split', 'Monthly Budget Split')}</h3>
+      <div class="chart-wrap">
+        <div class="pie-container"><canvas id="pieChart" width="220" height="220"></canvas>
+          <div class="pie-center"><div class="total">${fmt(income)}</div><div class="lbl">/month</div></div>
+        </div>
+        <div class="legend">${budget.map((b,i) => `
+          <div class="legend-item">
+            <div class="legend-dot" style="background:${pieColors[i % pieColors.length]}"></div>
+            <span>${b['cat_' + lang]} — ${b.pct}% (${fmt(b.amount)})</span>
+          </div>
+        `).join('')}</div>
+      </div>
+      <table class="budget-table">
+        <thead><tr>
+          <th>${T('Category', 'Category')}</th>
+          <th>${T('Percentage', 'Percentage')}</th>
+          <th>${T('Amount', 'Amount')}</th>
+          <th>${T('Notes', 'Notes')}</th>
+        </tr></thead>
+        <tbody>${budget.map(b => `<tr>
+          <td>${b['cat_' + lang]}</td>
+          <td class="pct">${b.pct}%</td>
+          <td class="amt">${fmt(b.amount)}</td>
+          <td style="color:var(--muted);font-size:12px">${b['detail_' + lang] || '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+  resultsEl.innerHTML += budgetHTML;
+
+  // Draw pie chart
+  setTimeout(() => drawPie(budget, pieColors), 100);
+
+  // ── Section: Loan Guide ──
+  if (state.homeLoan || state.carLoan || state.personalLoan) {
+    const maxEMI = Math.round(income * 0.40);
+    let loanCards = '';
+    if (state.homeLoan) {
+      const maxLoan = Math.round(income * 0.22 * 12 * 15 * 0.55 / 10000) * 10000; // rough estimation
+      loanCards += loanCardHTML(
+        T('Home Loan','Home Loan'), fmt(Math.round(income*0.22)),
+        [
+          [T('Max Loan Amount','Max Loan Amount'), 'Rs.20-30 Lakhs'],
+          [T('Interest Rate','Interest Rate'), '8.5 — 9.5%'],
+          [T('Tenure','Tenure'), T('15-20 Saal','15-20 Years')],
+          [T('Down Payment','Down Payment'), T('Min 20% dena padega','Min 20% required')],
+        ], '#028090'
+      );
+    }
+    if (state.carLoan) {
+      loanCards += loanCardHTML(
+        T('Car Loan','Car Loan'), fmt(Math.round(income*0.08)),
+        [
+          [T('Max Loan Amount','Max Loan Amount'), 'Rs.4-6 Lakhs'],
+          [T('Interest Rate','Interest Rate'), '9 — 11%'],
+          [T('Tenure','Tenure'), T('5-7 Saal','5-7 Years')],
+          [T('Down Payment','Down Payment'), T('30% se zyada do','30%+ recommended')],
+        ], '#00A896'
+      );
+    }
+    if (state.personalLoan) {
+      loanCards += loanCardHTML(
+        T('Personal Loan','Personal Loan'), fmt(Math.round(income*0.07)),
+        [
+          [T('Max Loan Amount','Max Loan Amount'), 'Rs.2-3 Lakhs'],
+          [T('Interest Rate','Interest Rate'), '12 — 16%'],
+          [T('Tenure','Tenure'), T('2-3 Saal','2-3 Years')],
+          [T('Tip','Tip'), T('Jaldi chukao, interest zyada','Pay off fast, high interest')],
+        ], '#6366F1'
+      );
+    }
+
+    resultsEl.innerHTML += `
+      <div class="card result-section">
+        <h3>${T('Loan Guide','Loan Guide')}</h3>
+        <div class="loan-grid">${loanCards}</div>
+        <div class="emi-banner">
+          <div>${T('Max Total EMI Limit','Max Total EMI Limit')}</div>
+          <div class="big">${fmt(maxEMI)}/month</div>
+          <div class="note">${T('Income ka 40% se zyada EMI mat lo — risky hai','Never exceed 40% of income on EMIs — it\'s risky')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Section: Education & Wedding Planning ──
+  if (isFamily && state.kids.length > 0) {
+    let goalCards = '';
+    state.kids.forEach((kid, i) => {
+      const age = parseInt(kid.age) || 0;
+      const yrsToGrad = Math.max(0, 22 - age);
+      const yrsToWedding = Math.max(0, 25 - age);
+      const eduCorpus = 15; // Rs.15 lakhs target for graduation
+      const weddingCorpus = 10; // Rs.10 lakhs target
+      const monthlySIPedu = yrsToGrad > 0 ? Math.round((eduCorpus * 100000) / (yrsToGrad * 12 * 1.5)) : 0; // ~12% return factor
+      const monthlySIPwed = yrsToWedding > 0 ? Math.round((weddingCorpus * 100000) / (yrsToWedding * 12 * 1.5)) : 0;
+
+      goalCards += `
+        <div class="goal-card">
+          <h4>${T('Baccha','Child')} ${i+1} — <span class="kid-name">${T('Umar','Age')}: ${age} ${T('saal','years')}</span></h4>
+          <div style="margin-top: 12px;">
+            <strong style="color:var(--primary)">${T('Education Fund (Graduation)','Education Fund (Graduation)')}</strong>
+            <div class="row"><span>${T('Target Corpus','Target Corpus')}</span><span>Rs.15 Lakhs</span></div>
+            <div class="row"><span>${T('Saalon mein chahiye','Years remaining')}</span><span>${yrsToGrad} ${T('saal','years')}</span></div>
+            <div class="row"><span>${T('Monthly SIP chahiye','Monthly SIP needed')}</span><span style="color:var(--rupee-green);font-weight:800">${fmt(monthlySIPedu)}</span></div>
+          </div>
+          <div style="margin-top: 14px;">
+            <strong style="color:var(--gold)">${T('Shaadi Fund','Wedding Fund')}</strong>
+            <div class="row"><span>${T('Target Corpus','Target Corpus')}</span><span>Rs.10 Lakhs</span></div>
+            <div class="row"><span>${T('Saalon mein chahiye','Years remaining')}</span><span>${yrsToWedding} ${T('saal','years')}</span></div>
+            <div class="row"><span>${T('Monthly SIP chahiye','Monthly SIP needed')}</span><span style="color:var(--rupee-green);font-weight:800">${fmt(monthlySIPwed)}</span></div>
+          </div>
+          <div class="highlight">${T('Total Monthly SIP','Total Monthly SIP')}: ${fmt(monthlySIPedu + monthlySIPwed)}</div>
+        </div>
+      `;
+    });
+
+    const totalKidSIP = state.kids.reduce((sum, kid) => {
+      const age = parseInt(kid.age) || 0;
+      const yrsToGrad = Math.max(1, 22 - age);
+      const yrsToWedding = Math.max(1, 25 - age);
+      return sum + Math.round(1500000 / (yrsToGrad * 12 * 1.5)) + Math.round(1000000 / (yrsToWedding * 12 * 1.5));
+    }, 0);
+
+    resultsEl.innerHTML += `
+      <div class="card result-section">
+        <h3>${T('Education & Shaadi Planning','Education & Wedding Planning')}</h3>
+        <p style="color:var(--muted);margin-bottom:16px;font-size:14px">${T(
+          'Assuming ~12% annual return (equity mutual funds) through SIP.',
+          'Assuming ~12% annual return (equity mutual funds) through SIP.'
+        )}</p>
+        <div class="goal-grid">${goalCards}</div>
+        <div class="emi-banner" style="background: linear-gradient(135deg, #059669, #028090); margin-top: 20px;">
+          <div>${T('Saare Bacchon Ka Total SIP','Total SIP for All Children')}</div>
+          <div class="big">${fmt(totalKidSIP)}/month</div>
+          <div class="note">${T('Yeh aapke Savings & Investments budget mein se aayega','This comes from your Savings & Investments budget')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Section: Dual City ──
+  if (state.dualCity && !isSingle) {
+    const cityIncome = income;
+    const hra = state.hraAmt;
+    const rent2 = Math.round(hra > 0 ? hra * 1.2 : income * 0.15);
+    const spouseShare = Math.round(cityIncome * 0.45);
+    const selfShare = cityIncome - spouseShare;
+
+    resultsEl.innerHTML += `
+      <div class="card result-section">
+        <h3>${T('Dual City — Paisa Kaise Baanto','Dual City — How to Split Money')}</h3>
+        <p style="color:var(--muted);margin-bottom:16px;font-size:14px">${T(
+          'Jab husband-wife alag city mein rehte hain, aise split karo.',
+          'When husband and wife live in different cities, split like this.'
+        )}</p>
+        <div class="dual-grid">
+          <div class="dual-card" style="border-top: 4px solid var(--primary);">
+            <h4>${T('Aapka Share (45%)','Your Share (45%)')}</h4>
+            <div class="row"><span>${T('Total','Total')}</span><span style="font-weight:800;color:var(--primary)">${fmt(selfShare)}</span></div>
+            <div class="row"><span>${T('Room Rent','Room Rent')}</span><span>${fmt(Math.round(selfShare*0.3))}</span></div>
+            <div class="row"><span>${T('Khaana & Groceries','Food & Groceries')}</span><span>${fmt(Math.round(selfShare*0.3))}</span></div>
+            <div class="row"><span>${T('Transport & Bills','Transport & Bills')}</span><span>${fmt(Math.round(selfShare*0.25))}</span></div>
+            <div class="row"><span>${T('Personal','Personal')}</span><span>${fmt(Math.round(selfShare*0.15))}</span></div>
+          </div>
+          <div class="dual-card" style="border-top: 4px solid var(--secondary);">
+            <h4>${T('Spouse Ka Share (55%)','Spouse Share (55%)')}</h4>
+            <div class="row"><span>${T('Total','Total')}</span><span style="font-weight:800;color:var(--secondary)">${fmt(spouseShare)}</span></div>
+            <div class="row"><span>${T('Ghar Ka Kharcha','Household Expenses')}</span><span>${fmt(Math.round(spouseShare*0.35))}</span></div>
+            <div class="row"><span>${T('Bacchon Ka Kharcha','Kids Expenses')}</span><span>${fmt(Math.round(spouseShare*0.2))}</span></div>
+            <div class="row"><span>${T('Savings & SIP','Savings & SIP')}</span><span>${fmt(Math.round(spouseShare*0.3))}</span></div>
+            <div class="row"><span>${T('Emergency','Emergency')}</span><span>${fmt(Math.round(spouseShare*0.15))}</span></div>
+          </div>
+        </div>
+        ${hra > 0 ? `<p style="margin-top:12px;color:var(--muted);font-size:13px">HRA: ${fmt(hra)}/month — ${T('yeh aapke income mein already add hai','this is already included in your income')}</p>` : ''}
+      </div>
+    `;
+  }
+
+  // ── Section: Extra Income ──
+  if (state.extraIncome > 0) {
+    const extra = state.extraIncome;
+    resultsEl.innerHTML += `
+      <div class="card result-section">
+        <h3>${T('Extra Income Kaise Use Karo','How to Use Extra Income')}</h3>
+        <p style="color:var(--muted);margin-bottom:16px;font-size:14px">${T(
+          `Aapki extra income Rs.${extra.toLocaleString('en-IN')}/month — ise lifestyle upgrade mat samjho!`,
+          `Your extra income of Rs.${extra.toLocaleString('en-IN')}/month — don't treat it as a lifestyle upgrade!`
+        )}</p>
+        <table class="budget-table">
+          <thead><tr><th>${T('Kahan Lagao','Where to Put')}</th><th>%</th><th>${T('Amount','Amount')}</th></tr></thead>
+          <tbody>
+            <tr><td>${T('Emergency Fund Top-up','Emergency Fund Top-up')}</td><td class="pct">30%</td><td class="amt">${fmt(Math.round(extra*0.3))}</td></tr>
+            <tr><td>${T('Extra SIP (Equity)','Extra SIP (Equity)')}</td><td class="pct">40%</td><td class="amt">${fmt(Math.round(extra*0.4))}</td></tr>
+            <tr><td>${T('Bacchon Ka Fund / PPF','Kids Fund / PPF')}</td><td class="pct">20%</td><td class="amt">${fmt(Math.round(extra*0.2))}</td></tr>
+            <tr><td>${T('Personal Reward','Personal Reward')}</td><td class="pct">10%</td><td class="amt">${fmt(Math.round(extra*0.1))}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // ── Section: Smart Tips ──
+  const tips = lang === 'hi' ? [
+    'Zero Rent = Superpower — savings 40%+ rakh sakte ho, yeh mauka baar baar nahi milega.',
+    'SIPs Automate Karo — salary day pe auto-debit SIP lagao, jo dikhega nahi woh kharchega nahi.',
+    'Alag-Alag Accounts Rakho — salary, savings, kharcha ke liye 3 alag bank accounts.',
+    'Insurance = Emergency Fund — term + health insurance le lo. Dono unexpected costs se bachate hain.',
+    'Har Rupaya Track Karo — Walnut, Money Manager ya spreadsheet use karo. Monthly review zaroor karo.',
+    'Loan EMI 40% se zyada kabhi mat lo — warna savings zero ho jayegi.',
+  ] : [
+    'Zero Rent = Superpower — you can save 40%+, this opportunity is rare.',
+    'Automate SIPs — set up auto-debit on salary day, what you don\'t see you won\'t spend.',
+    'Keep Separate Accounts — 3 bank accounts for salary, savings, and expenses.',
+    'Insurance = Emergency Fund — get term + health insurance to protect against unexpected costs.',
+    'Track Every Rupee — use Walnut, Money Manager or a spreadsheet. Review monthly.',
+    'Never exceed 40% of income on loan EMIs — your savings will disappear.',
+  ];
+
+  resultsEl.innerHTML += `
+    <div class="card result-section">
+      <h3>${T('Smart Paisa Tips','Smart Money Tips')}</h3>
+      <div class="tip-list">${tips.map((t, i) => `
+        <div class="tip-item">
+          <div class="tip-num">${i + 1}</div>
+          <div class="tip-text">${t}</div>
+        </div>
+      `).join('')}</div>
+    </div>
+  `;
+
+  // ── Restart Button ──
+  resultsEl.innerHTML += `
+    <button class="restart-btn" onclick="restart()">${T('Dobara Calculate Karo','Recalculate')}</button>
+  `;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function loanCardHTML(title, emi, rows, color) {
+  return `
+    <div class="loan-card" style="border-top-color:${color}">
+      <div class="lc-header">
+        <h4>${title}</h4>
+        <div class="max-amt">${emi}/month EMI</div>
+      </div>
+      <div class="lc-body">
+        ${rows.map(([l, v]) => `<div class="lc-row"><span>${l}</span><span>${v}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function stateVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ═══════════════════════════════════════════════════
+// PIE CHART (pure canvas — no library needed)
+// ═══════════════════════════════════════════════════
+function drawPie(data, colors) {
+  const canvas = document.getElementById('pieChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 110, cy = 110, r = 95;
+  let startAngle = -Math.PI / 2;
+
+  data.forEach((item, i) => {
+    const sliceAngle = (item.pct / 100) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    startAngle += sliceAngle;
+  });
+
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, 55, 0, 2 * Math.PI);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+}
+
+// ═══════════════════════════════════════════════════
+// RESTART
+// ═══════════════════════════════════════════════════
+function restart() {
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('results').innerHTML = '';
+  currentStep = 1;
+  goStep(1);
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+renderSteps();
+</script>
+</body>
+</html>
