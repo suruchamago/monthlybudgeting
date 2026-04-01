@@ -227,6 +227,22 @@
   .savings-highlight { animation: highlightPulse 0.6s ease; }
   @keyframes highlightPulse { 0%,100% { background: transparent; } 50% { background: #D1FAE5; } }
 
+  /* ── Budget Status Banner ── */
+  .budget-status {
+    padding: 14px 20px; border-radius: 10px; margin-bottom: 20px;
+    font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;
+  }
+  .budget-status.ok { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+  .budget-status.warning { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+  .budget-status.danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+  .budget-status .status-icon { font-size: 20px; }
+  .note-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  }
+  .note-tag.ok { background: #D1FAE5; color: #065F46; }
+  .note-tag.tight { background: #FEF3C7; color: #92400E; }
+  .note-tag.over { background: #FEE2E2; color: #991B1B; }
+
   /* ── Pie Chart ── */
   .chart-wrap {
     display: flex; align-items: center; justify-content: center; gap: 24px;
@@ -1125,6 +1141,24 @@ function stateVar(name) {
 // ═══════════════════════════════════════════════════
 // BUDGET TABLE RENDER + ADJUST
 // ═══════════════════════════════════════════════════
+function getBudgetNote(b, income, totalCommitted, savingsAmt) {
+  const T = window._T;
+  const fmt = window._fmt;
+  const isLoanOrParent = ['Home Loan EMI','Car Loan EMI','Personal Loan EMI','Money to Parents'].includes(b.cat_en);
+
+  if (b.cat_en === 'Savings & Investments') {
+    if (b.amount <= 0) return `<span class="note-tag over">${T('⚠ Savings zero! Kharche kam karo','⚠ No savings! Reduce expenses')}</span>`;
+    if (b.pct < 10) return `<span class="note-tag tight">${T('⚠ Savings kam hai, 10%+ rakho','⚠ Low savings, aim for 10%+')}</span>`;
+    return `<span class="note-tag ok">${T('✓ Sahi hai','✓ On track')}</span>`;
+  }
+  if (isLoanOrParent) {
+    if (b.pct > 40) return `<span class="note-tag over">${T('⚠ Bahut zyada! 40% se neeche lao','⚠ Too high! Keep under 40%')}</span>`;
+    if (b.pct > 30) return `<span class="note-tag tight">${T('⚠ Thoda zyada — kam karne ki koshish karo','⚠ On the higher side — try to reduce')}</span>`;
+    return `<span class="note-tag ok">${T('✓ Budget mein hai','✓ Within budget')}</span>`;
+  }
+  return `<span style="color:var(--muted);font-size:12px">—</span>`;
+}
+
 function renderBudgetSection() {
   const budget = window._budget;
   const income = window._income;
@@ -1136,9 +1170,57 @@ function renderBudgetSection() {
   const old = document.getElementById('budgetSplitSection');
   if (old) old.remove();
 
+  // Calculate totals for status
+  const savingsItem = budget.find(b => b.cat_en === 'Savings & Investments');
+  const savingsAmt = savingsItem ? savingsItem.amount : 0;
+  const savingsPct = savingsItem ? savingsItem.pct : 0;
+  const loanParentItems = budget.filter(b =>
+    ['Home Loan EMI','Car Loan EMI','Personal Loan EMI','Money to Parents'].includes(b.cat_en));
+  const totalLoanPct = loanParentItems.reduce((s, b) => s + b.pct, 0);
+  const totalCommitted = budget.reduce((s, b) => s + b.amount, 0);
+
+  // Status banner
+  let statusClass, statusMsg;
+  if (savingsAmt <= 0) {
+    statusClass = 'danger';
+    const overBy = Math.abs(savingsAmt);
+    statusMsg = T(
+      `⚠ Budget Over Hai! Aapko Rs.${overBy.toLocaleString('en-IN')} kam karna hoga kharcho mein taaki savings zero se upar aaye.`,
+      `⚠ Over Budget! You need to reduce Rs.${overBy.toLocaleString('en-IN')} from expenses to have any savings.`
+    );
+    if (totalLoanPct > 30) {
+      statusMsg += ' ' + T(
+        `Loan/EMI ${totalLoanPct}% hai — 30% se neeche laane ki koshish karo.`,
+        `Loans/EMIs are at ${totalLoanPct}% — try to bring them under 30%.`
+      );
+    }
+  } else if (savingsPct < 10) {
+    statusClass = 'warning';
+    const needMore = Math.round(income * 0.10) - savingsAmt;
+    statusMsg = T(
+      `⚠ Savings sirf ${savingsPct}% hai. ${fmt(needMore)} aur bachao taaki minimum 10% savings ho.`,
+      `⚠ Savings is only ${savingsPct}%. Save ${fmt(needMore)} more to reach the minimum 10% target.`
+    );
+    if (totalLoanPct > 30) {
+      statusMsg += ' ' + T(
+        `Loan/EMI ${totalLoanPct}% hai — yahi sabse bada burden hai.`,
+        `Loans/EMIs at ${totalLoanPct}% are your biggest burden.`
+      );
+    }
+  } else {
+    statusClass = 'ok';
+    statusMsg = T(
+      `✓ Budget balanced hai! Savings ${savingsPct}% (${fmt(savingsAmt)}) — badhiya!`,
+      `✓ Budget is balanced! Savings at ${savingsPct}% (${fmt(savingsAmt)}) — great!`
+    );
+  }
+
   const budgetHTML = `
     <div class="card result-section" id="budgetSplitSection">
       <h3>${T('Monthly Budget Split', 'Monthly Budget Split')}</h3>
+      <div class="budget-status ${statusClass}">
+        <span>${statusMsg}</span>
+      </div>
       <div class="chart-wrap">
         <div class="pie-container"><canvas id="pieChart" width="220" height="220"></canvas>
           <div class="pie-center"><div class="total">${fmt(income)}</div><div class="lbl">/month</div></div>
@@ -1155,15 +1237,17 @@ function renderBudgetSection() {
           <th>${T('Category', 'Category')}</th>
           <th>${T('Percentage', 'Percentage')}</th>
           <th>${T('Amount', 'Amount')}</th>
+          <th>${T('Notes', 'Notes')}</th>
           <th>${T('Adjust', 'Adjust')}</th>
         </tr></thead>
-        <tbody>${budget.map((b, i) => `<tr id="budget-row-${i}">
+        <tbody>${budget.map((b, i) => `<tr id="budget-row-${i}" ${b.amount <= 0 && b.cat_en === 'Savings & Investments' ? 'style="background:#FEE2E2"' : ''}>
           <td>${b['cat_' + lang]}</td>
-          <td class="pct" id="budget-pct-${i}">${b.pct}%</td>
-          <td class="amt" id="budget-amt-${i}">${fmt(b.amount)}</td>
+          <td class="pct" id="budget-pct-${i}" ${b.pct < 0 ? 'style="color:var(--danger)"' : ''}>${b.pct}%</td>
+          <td class="amt" id="budget-amt-${i}" ${b.amount < 0 ? 'style="color:var(--danger)"' : ''}>${fmt(b.amount)}</td>
+          <td>${getBudgetNote(b, income, totalCommitted, savingsAmt)}</td>
           <td id="budget-adj-${i}">
             ${b.cat_en === 'Savings & Investments'
-              ? `<span style="color:var(--accent);font-size:12px;font-weight:600">${T('Auto-adjust','Auto-adjust')}</span>`
+              ? `<span style="color:var(--accent);font-size:12px;font-weight:600">${T('Auto','Auto')}</span>`
               : `<button class="adjust-btn" onclick="showAdjust(${i})">${T('Badlo','Adjust')}</button>`}
           </td>
         </tr>`).join('')}</tbody>
