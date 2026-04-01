@@ -1156,15 +1156,19 @@ function getBudgetNote(b, income, totalCommitted, savingsAmt) {
   const isLoanOrParent = userAmt > 0;
 
   if (b.cat_en === 'Savings & Investments') {
+    const minPct = 20;
+    const minAmt = Math.round(income * minPct / 100);
+    const minLine = T('Min savings: ' + minPct + '% (' + fmtRs(minAmt) + ')', 'Min savings: ' + minPct + '% (' + fmtRs(minAmt) + ')');
+
     if (b.amount <= 0) {
-      const reduceBy = Math.abs(b.amount) + Math.round(income * 0.10);
-      return `<span class="note-tag over">${T('⚠ Savings zero! ' + fmtRs(reduceBy) + ' kam karo kharcho mein','⚠ No savings! Reduce ' + fmtRs(reduceBy) + ' from expenses')}</span>`;
+      const reduceBy = Math.abs(b.amount) + minAmt;
+      return `<span class="note-tag over">${minLine} — ${T('⚠ Savings zero! Kharcho mein ' + fmtRs(reduceBy) + ' kam karo','⚠ No savings! Reduce ' + fmtRs(reduceBy) + ' from expenses')}</span>`;
     }
-    if (b.pct < 10) {
-      const needMore = Math.round(income * 0.10) - b.amount;
-      return `<span class="note-tag tight">${T('⚠ Savings kam hai, ' + fmtRs(needMore) + ' aur bachao','⚠ Low savings, save ' + fmtRs(needMore) + ' more')}</span>`;
+    if (b.pct < minPct) {
+      const needMore = minAmt - b.amount;
+      return `<span class="note-tag tight">${minLine} — ${T('⚠ Abhi sirf ' + b.pct + '% hai, ' + fmtRs(needMore) + ' aur bachao','⚠ Currently only ' + b.pct + '%, save ' + fmtRs(needMore) + ' more')}</span>`;
     }
-    return `<span class="note-tag ok">${T('✓ Sahi hai — ' + fmtRs(b.amount) + '/month','✓ On track — ' + fmtRs(b.amount) + '/month')}</span>`;
+    return `<span class="note-tag ok">${minLine} — ${T('✓ Badhiya! ' + b.pct + '% (' + fmtRs(b.amount) + ') bach raha hai','✓ Great! Saving ' + b.pct + '% (' + fmtRs(b.amount) + ')')}</span>`;
   }
 
   if (isLoanOrParent) {
@@ -1217,12 +1221,12 @@ function renderBudgetSection() {
         `Loans/EMIs are at ${totalLoanPct}% — try to bring them under 30%.`
       );
     }
-  } else if (savingsPct < 10) {
+  } else if (savingsPct < 20) {
     statusClass = 'warning';
-    const needMore = Math.round(income * 0.10) - savingsAmt;
+    const needMore = Math.round(income * 0.20) - savingsAmt;
     statusMsg = T(
-      `⚠ Savings sirf ${savingsPct}% hai. ${fmt(needMore)} aur bachao taaki minimum 10% savings ho.`,
-      `⚠ Savings is only ${savingsPct}%. Save ${fmt(needMore)} more to reach the minimum 10% target.`
+      `⚠ Savings sirf ${savingsPct}% hai. ${fmt(needMore)} aur bachao taaki minimum 20% savings ho.`,
+      `⚠ Savings is only ${savingsPct}%. Save ${fmt(needMore)} more to reach the minimum 20% target.`
     );
     if (totalLoanPct > 30) {
       statusMsg += ' ' + T(
