@@ -199,6 +199,34 @@
   .budget-table .pct { font-weight: 700; color: var(--primary); }
   .budget-table .amt { font-weight: 700; color: var(--rupee-green); }
 
+  /* ── Adjust Controls ── */
+  .adjust-btn {
+    padding: 4px 12px; border: 1.5px solid var(--primary); border-radius: 6px;
+    background: transparent; color: var(--primary); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .adjust-btn:hover { background: var(--primary); color: white; }
+  .adjust-input-wrap {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .adjust-input-wrap input {
+    width: 100px; padding: 4px 8px; border: 2px solid var(--primary); border-radius: 6px;
+    font-size: 13px; font-weight: 600; text-align: right;
+  }
+  .adjust-input-wrap input:focus { outline: none; border-color: var(--accent); }
+  .adjust-save {
+    padding: 4px 10px; border: none; border-radius: 6px;
+    background: var(--accent); color: white; font-size: 12px; font-weight: 700;
+    cursor: pointer;
+  }
+  .adjust-cancel {
+    padding: 4px 8px; border: none; border-radius: 6px;
+    background: #E2E8F0; color: var(--dark); font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+  .savings-highlight { animation: highlightPulse 0.6s ease; }
+  @keyframes highlightPulse { 0%,100% { background: transparent; } 50% { background: #D1FAE5; } }
+
   /* ── Pie Chart ── */
   .chart-wrap {
     display: flex; align-items: center; justify-content: center; gap: 24px;
@@ -312,6 +340,8 @@
     /* Budget Table */
     .budget-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .budget-table th, .budget-table td { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+    .adjust-input-wrap input { width: 80px; }
+    .adjust-btn { padding: 3px 8px; font-size: 11px; }
 
     /* Pie Chart */
     .chart-wrap { flex-direction: column; gap: 16px; }
@@ -858,40 +888,13 @@ function calculate() {
 
   // ── Section: Budget Split ──
   const pieColors = ['#028090','#00A896','#02C39A','#059669','#0891B2','#6366F1','#F59E0B','#14B8A6','#8B5CF6','#EC4899','#EF4444'];
-  let budgetHTML = `
-    <div class="card result-section">
-      <h3>${T('Monthly Budget Split', 'Monthly Budget Split')}</h3>
-      <div class="chart-wrap">
-        <div class="pie-container"><canvas id="pieChart" width="220" height="220"></canvas>
-          <div class="pie-center"><div class="total">${fmt(income)}</div><div class="lbl">/month</div></div>
-        </div>
-        <div class="legend">${budget.map((b,i) => `
-          <div class="legend-item">
-            <div class="legend-dot" style="background:${pieColors[i % pieColors.length]}"></div>
-            <span>${b['cat_' + lang]} — ${b.pct}% (${fmt(b.amount)})</span>
-          </div>
-        `).join('')}</div>
-      </div>
-      <table class="budget-table">
-        <thead><tr>
-          <th>${T('Category', 'Category')}</th>
-          <th>${T('Percentage', 'Percentage')}</th>
-          <th>${T('Amount', 'Amount')}</th>
-          <th>${T('Notes', 'Notes')}</th>
-        </tr></thead>
-        <tbody>${budget.map(b => `<tr>
-          <td>${b['cat_' + lang]}</td>
-          <td class="pct">${b.pct}%</td>
-          <td class="amt">${fmt(b.amount)}</td>
-          <td style="color:var(--muted);font-size:12px">${b['detail_' + lang] || '—'}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>
-  `;
-  resultsEl.innerHTML += budgetHTML;
-
-  // Draw pie chart
-  setTimeout(() => drawPie(budget, pieColors), 100);
+  // Store globally for adjustment
+  window._budget = budget;
+  window._income = income;
+  window._pieColors = pieColors;
+  window._T = T;
+  window._fmt = fmt;
+  renderBudgetSection();
 
   // ── Section: Loan Guide ──
   if (state.homeLoan || state.carLoan || state.personalLoan) {
@@ -1117,6 +1120,116 @@ function loanCardHTML(title, emi, rows, color) {
 
 function stateVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ═══════════════════════════════════════════════════
+// BUDGET TABLE RENDER + ADJUST
+// ═══════════════════════════════════════════════════
+function renderBudgetSection() {
+  const budget = window._budget;
+  const income = window._income;
+  const pieColors = window._pieColors;
+  const T = window._T;
+  const fmt = window._fmt;
+
+  // Remove old budget section if exists
+  const old = document.getElementById('budgetSplitSection');
+  if (old) old.remove();
+
+  const budgetHTML = `
+    <div class="card result-section" id="budgetSplitSection">
+      <h3>${T('Monthly Budget Split', 'Monthly Budget Split')}</h3>
+      <div class="chart-wrap">
+        <div class="pie-container"><canvas id="pieChart" width="220" height="220"></canvas>
+          <div class="pie-center"><div class="total">${fmt(income)}</div><div class="lbl">/month</div></div>
+        </div>
+        <div class="legend">${budget.map((b,i) => `
+          <div class="legend-item">
+            <div class="legend-dot" style="background:${pieColors[i % pieColors.length]}"></div>
+            <span>${b['cat_' + lang]} — ${b.pct}% (${fmt(b.amount)})</span>
+          </div>
+        `).join('')}</div>
+      </div>
+      <table class="budget-table">
+        <thead><tr>
+          <th>${T('Category', 'Category')}</th>
+          <th>${T('Percentage', 'Percentage')}</th>
+          <th>${T('Amount', 'Amount')}</th>
+          <th>${T('Adjust', 'Adjust')}</th>
+        </tr></thead>
+        <tbody>${budget.map((b, i) => `<tr id="budget-row-${i}">
+          <td>${b['cat_' + lang]}</td>
+          <td class="pct" id="budget-pct-${i}">${b.pct}%</td>
+          <td class="amt" id="budget-amt-${i}">${fmt(b.amount)}</td>
+          <td id="budget-adj-${i}">
+            ${b.cat_en === 'Savings & Investments'
+              ? `<span style="color:var(--accent);font-size:12px;font-weight:600">${T('Auto-adjust','Auto-adjust')}</span>`
+              : `<button class="adjust-btn" onclick="showAdjust(${i})">${T('Badlo','Adjust')}</button>`}
+          </td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <p style="margin-top:12px;font-size:12px;color:var(--muted);">${T('💡 Kisi bhi category mein paisa kam karo — bacha hua Savings mein chala jayega.','💡 Reduce any category — the saved amount goes to Savings & Investments.')}</p>
+    </div>
+  `;
+
+  // Insert after summary banner (first child of results)
+  const resultsEl = document.getElementById('results');
+  const summaryCard = resultsEl.children[0];
+  if (summaryCard && summaryCard.nextSibling) {
+    summaryCard.insertAdjacentHTML('afterend', budgetHTML);
+  } else {
+    resultsEl.innerHTML += budgetHTML;
+  }
+
+  setTimeout(() => drawPie(budget, pieColors), 50);
+}
+
+function showAdjust(idx) {
+  const fmt = window._fmt;
+  const T = window._T;
+  const b = window._budget[idx];
+  const cell = document.getElementById('budget-adj-' + idx);
+  cell.innerHTML = `
+    <div class="adjust-input-wrap">
+      <input type="number" id="adj-input-${idx}" value="${b.amount}" min="0" step="500">
+      <button class="adjust-save" onclick="applyAdjust(${idx})">${T('✓','✓')}</button>
+      <button class="adjust-cancel" onclick="cancelAdjust(${idx})">${T('✗','✗')}</button>
+    </div>
+  `;
+  document.getElementById('adj-input-' + idx).focus();
+  document.getElementById('adj-input-' + idx).select();
+}
+
+function cancelAdjust(idx) {
+  const T = window._T;
+  const cell = document.getElementById('budget-adj-' + idx);
+  cell.innerHTML = `<button class="adjust-btn" onclick="showAdjust(${idx})">${T('Badlo','Adjust')}</button>`;
+}
+
+function applyAdjust(idx) {
+  const budget = window._budget;
+  const income = window._income;
+  const fmt = window._fmt;
+
+  const newAmt = parseInt(document.getElementById('adj-input-' + idx).value) || 0;
+  const oldAmt = budget[idx].amount;
+  const diff = oldAmt - newAmt;
+
+  if (newAmt < 0 || newAmt > income) return;
+
+  // Update this item
+  budget[idx].amount = newAmt;
+  budget[idx].pct = Math.round((newAmt / income) * 100);
+
+  // Add the difference to Savings
+  const savingsIdx = budget.findIndex(b => b.cat_en === 'Savings & Investments');
+  if (savingsIdx !== -1 && savingsIdx !== idx) {
+    budget[savingsIdx].amount += diff;
+    budget[savingsIdx].pct = Math.round((budget[savingsIdx].amount / income) * 100);
+  }
+
+  // Re-render the whole budget section
+  renderBudgetSection();
 }
 
 // ═══════════════════════════════════════════════════
