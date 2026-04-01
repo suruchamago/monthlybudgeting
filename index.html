@@ -1144,18 +1144,41 @@ function stateVar(name) {
 function getBudgetNote(b, income, totalCommitted, savingsAmt) {
   const T = window._T;
   const fmt = window._fmt;
-  const isLoanOrParent = ['Home Loan EMI','Car Loan EMI','Personal Loan EMI','Money to Parents'].includes(b.cat_en);
+  const fmtRs = n => 'Rs.' + n.toLocaleString('en-IN');
+
+  // Get user-entered amount for loan/parent items
+  let userAmt = 0;
+  if (b.cat_en === 'Home Loan EMI') userAmt = state.homeLoanEmi;
+  else if (b.cat_en === 'Car Loan EMI') userAmt = state.carLoanEmi;
+  else if (b.cat_en === 'Personal Loan EMI') userAmt = state.personalLoanEmi;
+  else if (b.cat_en === 'Money to Parents') userAmt = state.parentsMoneyAmt;
+
+  const isLoanOrParent = userAmt > 0;
 
   if (b.cat_en === 'Savings & Investments') {
-    if (b.amount <= 0) return `<span class="note-tag over">${T('⚠ Savings zero! Kharche kam karo','⚠ No savings! Reduce expenses')}</span>`;
-    if (b.pct < 10) return `<span class="note-tag tight">${T('⚠ Savings kam hai, 10%+ rakho','⚠ Low savings, aim for 10%+')}</span>`;
-    return `<span class="note-tag ok">${T('✓ Sahi hai','✓ On track')}</span>`;
+    if (b.amount <= 0) {
+      const reduceBy = Math.abs(b.amount) + Math.round(income * 0.10);
+      return `<span class="note-tag over">${T('⚠ Savings zero! ' + fmtRs(reduceBy) + ' kam karo kharcho mein','⚠ No savings! Reduce ' + fmtRs(reduceBy) + ' from expenses')}</span>`;
+    }
+    if (b.pct < 10) {
+      const needMore = Math.round(income * 0.10) - b.amount;
+      return `<span class="note-tag tight">${T('⚠ Savings kam hai, ' + fmtRs(needMore) + ' aur bachao','⚠ Low savings, save ' + fmtRs(needMore) + ' more')}</span>`;
+    }
+    return `<span class="note-tag ok">${T('✓ Sahi hai — ' + fmtRs(b.amount) + '/month','✓ On track — ' + fmtRs(b.amount) + '/month')}</span>`;
   }
+
   if (isLoanOrParent) {
-    if (b.pct > 40) return `<span class="note-tag over">${T('⚠ Bahut zyada! 40% se neeche lao','⚠ Too high! Keep under 40%')}</span>`;
-    if (b.pct > 30) return `<span class="note-tag tight">${T('⚠ Thoda zyada — kam karne ki koshish karo','⚠ On the higher side — try to reduce')}</span>`;
-    return `<span class="note-tag ok">${T('✓ Budget mein hai','✓ Within budget')}</span>`;
+    const idealPct = b.cat_en === 'Home Loan EMI' ? 25 : b.cat_en === 'Car Loan EMI' ? 10 : b.cat_en === 'Personal Loan EMI' ? 8 : 10;
+    const idealAmt = Math.round(income * idealPct / 100);
+    const filledLine = T('Aapne bhara: ' + fmtRs(userAmt), 'You entered: ' + fmtRs(userAmt));
+
+    if (userAmt > idealAmt) {
+      const reduceBy = userAmt - idealAmt;
+      return `<span class="note-tag over">${filledLine} — ${T('⚠ ' + fmtRs(reduceBy) + ' kam karo (ideal: ' + fmtRs(idealAmt) + ')','⚠ Reduce by ' + fmtRs(reduceBy) + ' (ideal: ' + fmtRs(idealAmt) + ')')}</span>`;
+    }
+    return `<span class="note-tag ok">${filledLine} — ${T('✓ Budget mein hai','✓ Within budget')}</span>`;
   }
+
   return `<span style="color:var(--muted);font-size:12px">—</span>`;
 }
 
