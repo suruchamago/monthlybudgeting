@@ -368,6 +368,11 @@
     .checkbox-group { flex-direction: column; gap: 8px; }
     .check-item { width: 100%; }
 
+    /* Loan EMI Rows */
+    .loan-emi-row { flex-wrap: wrap; }
+    .loan-emi-row label { white-space: normal; }
+    .loan-emi-row input { width: 100%; }
+
     /* Buttons */
     .btn-row { flex-direction: column-reverse; gap: 8px; }
     .btn { width: 100%; text-align: center; padding: 14px 20px; }
@@ -438,7 +443,7 @@
   </div>
 </div>
 
-<div class="container">
+<div class="container" autocomplete="off">
 
   <!-- Step Indicator -->
   <div class="steps-bar" id="stepsBar"></div>
@@ -1545,7 +1550,38 @@ function restart() {
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
-renderSteps();
+function initApp() {
+  // Clear all selections to prevent browser-restored state
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('#step3 input[type="checkbox"]').forEach(c => c.checked = false);
+  ['homeloan','carloan','personalloan','parentsmoney'].forEach(type => {
+    document.getElementById('emi-' + type).classList.add('hidden');
+    document.getElementById('emiAmt-' + type).value = '';
+  });
+  document.getElementById('salary').value = '';
+  document.getElementById('extraIncome').value = '';
+  document.getElementById('btn-step1-next').disabled = true;
+  document.getElementById('btn-step2-next').disabled = true;
+  document.getElementById('btn-step3-calc').disabled = true;
+  document.getElementById('rentAmtGroup').classList.add('hidden');
+  document.getElementById('hraGroup').classList.add('hidden');
+  document.getElementById('kidsSection').classList.add('hidden');
+  state.familyType = null;
+  state.rentSelected = false;
+  state.dualCitySelected = false;
+  state.paysRent = false;
+  state.dualCity = false;
+  currentStep = 1;
+  renderSteps();
+  goStep(1);
+}
+
+initApp();
+
+// Handle browser back/forward cache restoration
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) initApp();
+});
 </script>
 
 <footer class="footer">
