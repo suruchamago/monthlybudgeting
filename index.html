@@ -447,16 +447,16 @@
     <p class="subtitle" data-hi="Hum isi ke base pe aapka budget banayenge" data-en="We'll build your budget based on this">Hum isi ke base pe aapka budget banayenge</p>
     <div class="form-group">
       <label data-hi="Monthly In-Hand Salary (Rs.)" data-en="Monthly In-Hand Salary (Rs.)">Monthly In-Hand Salary (Rs.)</label>
-      <input type="number" id="salary" value="70000" min="10000" step="1000" placeholder="e.g. 70000">
+      <input type="number" id="salary" min="10000" step="1000" placeholder="e.g. 70000" oninput="validateStep1()">
     </div>
     <div class="form-group">
       <label data-hi="Extra Monthly Income (Rs.)" data-en="Extra Monthly Income (Rs.)">Extra Monthly Income (Rs.)</label>
       <p class="hint" data-hi="Field allowance / HRA / transport allowance etc." data-en="Field allowance / HRA / transport allowance etc.">Field allowance / HRA / transport allowance etc.</p>
-      <input type="number" id="extraIncome" value="0" min="0" step="500" placeholder="e.g. 8000">
+      <input type="number" id="extraIncome" min="0" step="500" placeholder="e.g. 8000">
     </div>
     <div class="btn-row">
       <span></span>
-      <button class="btn btn-primary" onclick="goStep(2)" data-hi="Aage Badho →" data-en="Next →">Aage Badho →</button>
+      <button class="btn btn-primary" onclick="goStep(2)" id="btn-step1-next" disabled data-hi="Aage Badho →" data-en="Next →">Aage Badho →</button>
     </div>
   </div>
 
@@ -645,11 +645,18 @@ function renderSteps() {
   bar.innerHTML = html;
 }
 
+function validateStep1() {
+  const btn = document.getElementById('btn-step1-next');
+  const val = parseInt(document.getElementById('salary').value) || 0;
+  btn.disabled = val < 5000;
+}
+
 function goStep(n) {
   // Validate before going forward
   if (n === 2) {
-    state.salary = Math.max(5000, parseInt(document.getElementById('salary').value) || 70000);
+    state.salary = Math.max(5000, parseInt(document.getElementById('salary').value) || 0);
     state.extraIncome = Math.max(0, parseInt(document.getElementById('extraIncome').value) || 0);
+    if (state.salary < 5000) return;
   }
   if (n === 3 && !state.familyType) return;
 
@@ -1508,6 +1515,9 @@ function restart() {
   state.paysRent = false;
   state.dualCity = false;
   document.querySelectorAll('#step2 .option-card, #step3 .option-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('salary').value = '';
+  document.getElementById('extraIncome').value = '';
+  document.getElementById('btn-step1-next').disabled = true;
   document.getElementById('btn-step2-next').disabled = true;
   document.getElementById('rentAmtGroup').classList.add('hidden');
   document.getElementById('hraGroup').classList.add('hidden');
