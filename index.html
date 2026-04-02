@@ -553,26 +553,26 @@
       <div class="loan-emi-inputs" id="emiInputs">
         <div class="loan-emi-row hidden" id="emi-homeloan">
           <label data-hi="Home Loan EMI (Rs./month):" data-en="Home Loan EMI (Rs./month):">Home Loan EMI (Rs./month):</label>
-          <input type="number" id="emiAmt-homeloan" placeholder="e.g. 15000" min="0" step="500">
+          <input type="number" id="emiAmt-homeloan" placeholder="e.g. 15000" min="0" step="500" oninput="validateStep3()">
         </div>
         <div class="loan-emi-row hidden" id="emi-carloan">
           <label data-hi="Car Loan EMI (Rs./month):" data-en="Car Loan EMI (Rs./month):">Car Loan EMI (Rs./month):</label>
-          <input type="number" id="emiAmt-carloan" placeholder="e.g. 8000" min="0" step="500">
+          <input type="number" id="emiAmt-carloan" placeholder="e.g. 8000" min="0" step="500" oninput="validateStep3()">
         </div>
         <div class="loan-emi-row hidden" id="emi-personalloan">
           <label data-hi="Personal Loan EMI (Rs./month):" data-en="Personal Loan EMI (Rs./month):">Personal Loan EMI (Rs./month):</label>
-          <input type="number" id="emiAmt-personalloan" placeholder="e.g. 5000" min="0" step="500">
+          <input type="number" id="emiAmt-personalloan" placeholder="e.g. 5000" min="0" step="500" oninput="validateStep3()">
         </div>
         <div class="loan-emi-row hidden" id="emi-parentsmoney">
           <label data-hi="Parents Ko Kitna Bhejte Ho (Rs./month):" data-en="Amount Sent to Parents (Rs./month):">Parents Ko Kitna Bhejte Ho (Rs./month):</label>
-          <input type="number" id="emiAmt-parentsmoney" placeholder="e.g. 10000" min="0" step="500">
+          <input type="number" id="emiAmt-parentsmoney" placeholder="e.g. 10000" min="0" step="500" oninput="validateStep3()">
         </div>
       </div>
     </div>
 
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="goStep(2)" data-hi="← Peeche" data-en="← Back">← Peeche</button>
-      <button class="btn btn-primary" onclick="calculate()" data-hi="Budget Banao! 🎯" data-en="Calculate Budget! 🎯">Budget Banao! 🎯</button>
+      <button class="btn btn-primary" onclick="calculate()" id="btn-step3-calc" disabled data-hi="Budget Banao! 🎯" data-en="Calculate Budget! 🎯">Budget Banao! 🎯</button>
     </div>
   </div>
 
@@ -603,6 +603,8 @@ let state = {
   carLoanEmi: 0,
   personalLoanEmi: 0,
   parentsMoneyAmt: 0,
+  rentSelected: false,
+  dualCitySelected: false,
 };
 let currentStep = 1;
 
@@ -664,10 +666,12 @@ function goStep(n) {
       dualCityGroup.classList.add('hidden');
       hraGroup.classList.add('hidden');
       state.dualCity = false;
+      state.dualCitySelected = true; // not needed for single
       state.hraAmt = 0;
     } else {
       dualCityGroup.classList.remove('hidden');
     }
+    validateStep3();
   }
 
   renderSteps();
@@ -725,22 +729,54 @@ function renderKids() {
 // ═══════════════════════════════════════════════════
 function selectRent(val) {
   state.paysRent = val === 'yes';
+  state.rentSelected = true;
   document.getElementById('opt-norent').classList.toggle('selected', val === 'no');
   document.getElementById('opt-yesrent').classList.toggle('selected', val === 'yes');
   document.getElementById('rentAmtGroup').classList.toggle('hidden', val === 'no');
+  validateStep3();
 }
 
 function selectDualCity(val) {
   state.dualCity = val === 'yes';
+  state.dualCitySelected = true;
   document.getElementById('opt-samecity').classList.toggle('selected', val === 'no');
   document.getElementById('opt-diffcity').classList.toggle('selected', val === 'yes');
   document.getElementById('hraGroup').classList.toggle('hidden', val === 'no');
+  validateStep3();
 }
 
 function toggleEmiInput(type) {
   const checked = document.getElementById('chk-' + type).checked;
   document.getElementById('emi-' + type).classList.toggle('hidden', !checked);
   if (!checked) document.getElementById('emiAmt-' + type).value = '';
+  validateStep3();
+}
+
+function validateStep3() {
+  const btn = document.getElementById('btn-step3-calc');
+  if (!btn) return;
+
+  // Rent must be selected
+  if (!state.rentSelected) { btn.disabled = true; return; }
+
+  // Dual city must be selected (unless single)
+  if (state.familyType !== 'single' && !state.dualCitySelected) { btn.disabled = true; return; }
+
+  // Any checked loan must have an EMI value
+  const loanChecks = [
+    { id: 'chk-homeloan', emi: 'emiAmt-homeloan' },
+    { id: 'chk-carloan', emi: 'emiAmt-carloan' },
+    { id: 'chk-personalloan', emi: 'emiAmt-personalloan' },
+    { id: 'chk-parentsmoney', emi: 'emiAmt-parentsmoney' },
+  ];
+  for (const lc of loanChecks) {
+    if (document.getElementById(lc.id).checked) {
+      const val = parseInt(document.getElementById(lc.emi).value) || 0;
+      if (val <= 0) { btn.disabled = true; return; }
+    }
+  }
+
+  btn.disabled = false;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1463,7 +1499,19 @@ function restart() {
   ['homeloan','carloan','personalloan','parentsmoney'].forEach(type => {
     document.getElementById('emi-' + type).classList.add('hidden');
     document.getElementById('emiAmt-' + type).value = '';
+    document.getElementById('chk-' + type).checked = false;
   });
+  // Reset selections
+  state.rentSelected = false;
+  state.dualCitySelected = false;
+  state.familyType = null;
+  state.paysRent = false;
+  state.dualCity = false;
+  document.querySelectorAll('#step2 .option-card, #step3 .option-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btn-step2-next').disabled = true;
+  document.getElementById('rentAmtGroup').classList.add('hidden');
+  document.getElementById('hraGroup').classList.add('hidden');
+  document.getElementById('kidsSection').classList.add('hidden');
   currentStep = 1;
   goStep(1);
 }
