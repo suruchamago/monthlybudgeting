@@ -714,13 +714,13 @@ function selectFamily(type) {
 
 function addKid() {
   if (state.kids.length >= 5) return;
-  state.kids.push({ age: 3 });
+  state.kids.push({ age: '' });
   renderKids();
 }
 
 function removeKid(idx) {
   state.kids.splice(idx, 1);
-  if (state.kids.length === 0) state.kids.push({ age: 3 });
+  if (state.kids.length === 0) state.kids.push({ age: '' });
   renderKids();
 }
 
@@ -732,8 +732,8 @@ function renderKids() {
   el.innerHTML = state.kids.map((k, i) => `
     <div class="kid-row">
       <span>${labels.kid} ${i + 1}</span>
-      <input type="number" value="${k.age}" min="0" max="18" placeholder="${labels.age}"
-        onchange="state.kids[${i}].age = parseInt(this.value)||0">
+      <input type="number" ${k.age !== '' ? `value="${k.age}"` : ''} min="0" max="18" placeholder="${lang === 'hi' ? 'e.g. 3 saal' : 'e.g. 3 yrs old'}"
+        onchange="state.kids[${i}].age = this.value !== '' ? parseInt(this.value)||0 : ''">
       ${state.kids.length > 1 ? `<button class="remove-kid" onclick="removeKid(${i})">${labels.remove}</button>` : ''}
     </div>
   `).join('');
