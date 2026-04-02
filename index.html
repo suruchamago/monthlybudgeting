@@ -20,6 +20,7 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { overflow-x: hidden; }
 
   body {
     font-family: 'Segoe UI', 'Calibri', system-ui, sans-serif;
@@ -339,13 +340,14 @@
     .lang-btn { padding: 5px 10px; font-size: 12px; }
 
     /* Container */
-    .container { padding: 16px 10px 40px; }
+    .container { padding: 16px 14px 40px; }
 
     /* Steps Bar */
     .steps-bar { padding: 0 4px; gap: 0; margin-bottom: 20px; }
+    .step-item { flex-direction: column; gap: 2px; text-align: center; }
     .step-circle { width: 30px; height: 30px; font-size: 12px; }
-    .step-label { font-size: 10px; }
-    .step-line { width: 28px; margin: 0 4px; }
+    .step-label { font-size: 9px; max-width: 60px; line-height: 1.2; }
+    .step-line { width: 20px; margin: 0 2px; align-self: center; margin-bottom: 14px; }
 
     /* Cards */
     .card { padding: 20px 16px; border-radius: 12px; margin-bottom: 14px; }
@@ -956,6 +958,12 @@ function calculate() {
     else budget[budget.length - 1].pct += diff;
   }
 
+  // Clamp savings to 0 minimum
+  const savingsCheck = budget.find(b => b.cat_en === 'Savings & Investments');
+  if (savingsCheck && savingsCheck.pct < 0) {
+    savingsCheck.pct = 0;
+  }
+
   // Calculate amounts
   budget.forEach(b => {
     b.amount = Math.round(income * b.pct / 100);
@@ -1460,10 +1468,10 @@ function applyAdjust(idx) {
   budget[idx].amount = newAmt;
   budget[idx].pct = Math.round((newAmt / income) * 100);
 
-  // Add the difference to Savings
+  // Add the difference to Savings (clamped to 0 min)
   const savingsIdx = budget.findIndex(b => b.cat_en === 'Savings & Investments');
   if (savingsIdx !== -1 && savingsIdx !== idx) {
-    budget[savingsIdx].amount += diff;
+    budget[savingsIdx].amount = Math.max(0, budget[savingsIdx].amount + diff);
     budget[savingsIdx].pct = Math.round((budget[savingsIdx].amount / income) * 100);
   }
 
