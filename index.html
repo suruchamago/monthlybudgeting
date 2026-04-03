@@ -127,7 +127,7 @@
     background: #F8FAFC; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px;
   }
   .kid-row span { font-weight: 600; color: var(--primary); min-width: 60px; }
-  .kid-row input { flex: 1; max-width: 120px; }
+  .kid-row input { flex: 1; max-width: 200px; }
   .kid-row .remove-kid {
     background: none; border: none; color: var(--danger);
     font-size: 20px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
@@ -953,16 +953,28 @@ function calculate() {
       { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 20 },
     ];
   } else {
-    // Family with kids
-    budget = [
-      { cat_hi: 'Groceries & Khaana', cat_en: 'Groceries & Food', pct: 20 },
-      { cat_hi: 'Utilities & Bills', cat_en: 'Utilities & Bills', pct: 10 },
-      { cat_hi: 'Transport', cat_en: 'Transport', pct: 7 },
-      { cat_hi: 'School Fees & Education', cat_en: 'School Fees & Education', pct: 12 },
-      { cat_hi: 'Personal & Lifestyle', cat_en: 'Personal & Lifestyle', pct: 6 },
-      { cat_hi: 'Savings & Investments', cat_en: 'Savings & Investments', pct: 30 },
-      { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 15 },
-    ];
+    // Family with kids — only include school fees if any kid is 3+
+    const hasSchoolAgeKid = state.kids.some(k => (parseInt(k.age) || 0) >= 3);
+    if (hasSchoolAgeKid) {
+      budget = [
+        { cat_hi: 'Groceries & Khaana', cat_en: 'Groceries & Food', pct: 20 },
+        { cat_hi: 'Utilities & Bills', cat_en: 'Utilities & Bills', pct: 10 },
+        { cat_hi: 'Transport', cat_en: 'Transport', pct: 7 },
+        { cat_hi: 'School Fees & Education', cat_en: 'School Fees & Education', pct: 5 },
+        { cat_hi: 'Personal & Lifestyle', cat_en: 'Personal & Lifestyle', pct: 6 },
+        { cat_hi: 'Savings & Investments', cat_en: 'Savings & Investments', pct: 37 },
+        { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 15 },
+      ];
+    } else {
+      budget = [
+        { cat_hi: 'Groceries & Khaana', cat_en: 'Groceries & Food', pct: 20 },
+        { cat_hi: 'Utilities & Bills', cat_en: 'Utilities & Bills', pct: 10 },
+        { cat_hi: 'Transport', cat_en: 'Transport', pct: 7 },
+        { cat_hi: 'Personal & Lifestyle', cat_en: 'Personal & Lifestyle', pct: 6 },
+        { cat_hi: 'Savings & Investments', cat_en: 'Savings & Investments', pct: 42 },
+        { cat_hi: 'Emergency + Healthcare', cat_en: 'Emergency + Healthcare', pct: 15 },
+      ];
+    }
   }
 
   // ── Adjust for rent ──
@@ -1419,7 +1431,7 @@ function getBudgetNote(b, income, totalCommitted, savingsAmt) {
     return `<span class="note-tag ok">${filledLine} — ${T('✓ Budget mein hai','✓ Within budget')}</span>`;
   }
 
-  return `<span style="color:var(--muted);font-size:12px">—</span>`;
+  return `<span style="color:var(--muted);font-size:12px">${T('Kam ya zyada ho toh Adjust karo','Adjust if this is less or more')}</span>`;
 }
 
 function renderBudgetSection() {
