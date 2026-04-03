@@ -1477,6 +1477,19 @@ function getBudgetNote(b, income, totalCommitted, savingsAmt) {
     return `<span class="note-tag ok">${filledLine} — ${T('✓ Budget mein hai','✓ Within budget')}</span>`;
   }
 
+  // Grocery breakdown when there are kids
+  if (b.cat_en === 'Groceries & Food' && state.familyType === 'family' && state.kids.length > 0) {
+    const numKids = state.kids.length;
+    const amt = b.amount;
+    const milkSnacks = Math.round(amt * 0.20);
+    const kidsFood = Math.round(amt * 0.15 * numKids);
+    const adultsFood = amt - milkSnacks - kidsFood;
+    return `<span style="color:var(--muted);font-size:12px">${T(
+      'Khaana: ~' + fmtRs(adultsFood) + ' | Bacchon ka: ~' + fmtRs(kidsFood) + ' (' + numKids + ' bacche) | Doodh/Snacks: ~' + fmtRs(milkSnacks),
+      'Adults: ~' + fmtRs(adultsFood) + ' | Kids food: ~' + fmtRs(kidsFood) + ' (' + numKids + ' kids) | Milk/Snacks: ~' + fmtRs(milkSnacks)
+    )}</span>`;
+  }
+
   return `<span style="color:var(--muted);font-size:12px">${T('Kam ya zyada ho toh Adjust karo','Adjust if this is less or more')}</span>`;
 }
 
