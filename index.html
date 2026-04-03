@@ -1181,6 +1181,52 @@ function calculate() {
     `;
   }
 
+  // ── Section: Kids Monthly Expenses ──
+  if (isFamily && state.kids.length > 0) {
+    let kidsExpCards = '';
+    state.kids.forEach((kid, i) => {
+      const age = parseInt(kid.age) || 0;
+      const kidLabel = T('Baccha ' + (i+1), 'Kid ' + (i+1));
+      const ageLabel = age + ' ' + T('saal', 'years');
+      if (age < 3) {
+        kidsExpCards += `
+          <div class="goal-card">
+            <h4>${kidLabel} — <span class="kid-name">${T('Umar','Age')}: ${ageLabel}</span></h4>
+            <div style="margin-top:10px;">
+              <div class="row"><span>🍼 ${T('Baby Food / Formula','Baby Food / Formula')}</span><span>${fmt(Math.round(income * 0.02))}</span></div>
+              <div class="row"><span>🧷 ${T('Diapers & Wipes','Diapers & Wipes')}</span><span>${fmt(Math.round(income * 0.015))}</span></div>
+              <div class="row"><span>🧸 ${T('Toys & Baby Care','Toys & Baby Care')}</span><span>${fmt(Math.round(income * 0.01))}</span></div>
+              <div class="row"><span>🏥 ${T('Doctor / Vaccination','Doctor / Vaccination')}</span><span>${fmt(Math.round(income * 0.005))}</span></div>
+            </div>
+            <div class="highlight">${T('Estimated Monthly','Estimated Monthly')}: ${fmt(Math.round(income * 0.05))}</div>
+          </div>`;
+      } else {
+        kidsExpCards += `
+          <div class="goal-card">
+            <h4>${kidLabel} — <span class="kid-name">${T('Umar','Age')}: ${ageLabel}</span></h4>
+            <div style="margin-top:10px;">
+              <div class="row"><span>🏫 ${T('School / KG Fees','School / KG Fees')}</span><span>${fmt(Math.round(income * 0.03))}</span></div>
+              <div class="row"><span>👕 ${T('Uniform & Shoes','Uniform & Shoes')}</span><span>${fmt(Math.round(income * 0.008))}</span></div>
+              <div class="row"><span>📚 ${T('Books & Stationery','Books & Stationery')}</span><span>${fmt(Math.round(income * 0.007))}</span></div>
+              <div class="row"><span>🧸 ${T('Toys & Activities','Toys & Activities')}</span><span>${fmt(Math.round(income * 0.005))}</span></div>
+            </div>
+            <div class="highlight">${T('Estimated Monthly','Estimated Monthly')}: ${fmt(Math.round(income * 0.05))}</div>
+          </div>`;
+      }
+    });
+
+    resultsEl.innerHTML += `
+      <div class="card result-section">
+        <h3>${T('Bacchon Ka Monthly Kharcha','Kids Monthly Expenses')}</h3>
+        <p style="color:var(--muted);margin-bottom:16px;font-size:14px">${T(
+          'Yeh estimated kharcha hai — aapke area aur lifestyle ke hisaab se adjust karein.',
+          'These are estimated expenses — adjust based on your area and lifestyle.'
+        )}</p>
+        <div class="goal-grid">${kidsExpCards}</div>
+      </div>
+    `;
+  }
+
   // ── Section: Education & Wedding Planning ──
   if (isFamily && state.kids.length > 0) {
     let breakdownMsgs = '';
